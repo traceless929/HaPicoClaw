@@ -21,7 +21,7 @@
 
 - 独立 Git 仓库
 - Home Assistant add-on 基本元数据
-- PicoClaw 二进制下载式 Dockerfile
+- 随仓库携带官方 `aarch64` 二进制 tar 包的 Dockerfile
 - 启动前配置生成脚本
 - `gateway` 服务启动脚本
 

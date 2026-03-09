@@ -1,13 +1,15 @@
-ARG BUILD_FROM
-ARG PICOCLAW_VERSION="v0.2.0"
+ARG BUILD_FROM="ghcr.io/home-assistant/aarch64-base:3.23-2026.02.0"
 
 FROM $BUILD_FROM
 
 ENV LANG=C.UTF-8
 
-RUN apk add --no-cache curl jq \
-    && curl -fsSL "https://github.com/sipeed/picoclaw/releases/download/${PICOCLAW_VERSION}/picoclaw-linux-arm64" -o /usr/bin/picoclaw \
-    && chmod 755 /usr/bin/picoclaw \
+COPY bin/picoclaw_Linux_arm64.tar.gz /tmp/picoclaw_Linux_arm64.tar.gz
+
+RUN apk add --no-cache ca-certificates curl jq tzdata \
+    && tar -xzf /tmp/picoclaw_Linux_arm64.tar.gz -C /tmp \
+    && install -m 755 /tmp/picoclaw /usr/bin/picoclaw \
+    && rm -f /tmp/picoclaw /tmp/picoclaw_Linux_arm64.tar.gz \
     && (/usr/bin/picoclaw version || /usr/bin/picoclaw --help >/dev/null)
 
 COPY rootfs /

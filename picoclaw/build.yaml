@@ -6,5 +6,3 @@ labels:
   org.opencontainers.image.description: "PicoClaw gateway packaged as a Home Assistant OS add-on."
   org.opencontainers.image.source: "https://github.com/traceless929/HaPicoClaw"
   org.opencontainers.image.licenses: "MIT"
-args:
-  PICOCLAW_VERSION: "v0.2.0"

@@ -8,7 +8,7 @@
 
 ## 当前能力
 
-- 下载并运行 `PicoClaw` 官方 `linux-arm64` 二进制
+- 随仓库携带并解压 `PicoClaw` 官方 `aarch64` 二进制 tar 包
 - 通过 add-on 选项生成 `config.json`
 - 使用 `/data/picoclaw` 持久化配置与工作目录
 - 以 `gateway` 服务形态常驻运行
