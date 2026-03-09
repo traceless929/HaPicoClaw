@@ -1,49 +1,85 @@
 configuration:
-  use_raw_config:
-    name: 启用原始 JSON 配置
-    description: 跳过自动生成逻辑，直接写入完整的 PicoClaw config.json。
-  raw_config:
-    name: 原始 PicoClaw 配置 JSON
-    description: 启用原始 JSON 配置时使用的完整 config.json 内容。
   model_name:
-    name: 模型别名
+    name: 核心 - 模型别名
     description: PicoClaw 内部使用的模型别名。
   model:
-    name: 模型标识
+    name: 核心 - 模型标识
     description: 提供商和模型标识，例如 openai/gpt-5.2 或 ollama/llama3。
-  discord_enabled:
-    name: 启用 Discord 频道
-    description: 启动 PicoClaw 时启用 Discord 频道。
-  discord_token:
-    name: Discord Bot Token
-    description: Discord 频道使用的 Bot Token。
-  discord_allow_from:
-    name: Discord 允许用户
-    description: 可选，使用逗号或换行分隔允许访问机器人的 Discord 用户 ID。
-  discord_mention_only:
-    name: Discord 仅被提及时响应
-    description: 在群聊中仅当机器人被 @ 时才响应。
-  discord_reasoning_channel_id:
-    name: Discord 推理频道 ID
-    description: 可选，用于输出推理过程的 Discord 频道 ID。
   api_key:
-    name: API Key
+    name: 核心 - API Key
     description: 所选模型提供商的 API Key，本地模型场景可留空。
   api_base:
-    name: API 基础地址
+    name: 核心 - API 基础地址
     description: 可选的 OpenAI 兼容接口地址。
   request_timeout:
-    name: 请求超时
+    name: 核心 - 请求超时
     description: 上游模型请求超时时间，单位秒。
+  qq_enabled:
+    name: QQ - 启用频道
+    description: 启动 PicoClaw 时启用 QQ 频道。
+  qq_app_id:
+    name: QQ - App ID
+    description: QQ 频道使用的 App ID。
+  qq_app_secret:
+    name: QQ - App Secret
+    description: QQ 频道使用的 App Secret。
+  qq_allow_from:
+    name: QQ - 允许用户
+    description: 可选，使用逗号或换行分隔允许访问机器人的 QQ 用户 ID。
+  qq_reasoning_channel_id:
+    name: QQ - 推理频道 ID
+    description: 可选，用于输出推理过程的 QQ 频道 ID。
+  feishu_enabled:
+    name: 飞书 - 启用频道
+    description: 启动 PicoClaw 时启用飞书频道。
+  feishu_app_id:
+    name: 飞书 - App ID
+    description: 飞书频道使用的 App ID。
+  feishu_app_secret:
+    name: 飞书 - App Secret
+    description: 飞书频道使用的 App Secret。
+  feishu_encrypt_key:
+    name: 飞书 - Encrypt Key
+    description: 可选，用于处理加密事件载荷的飞书 Encrypt Key。
+  feishu_verification_token:
+    name: 飞书 - Verification Token
+    description: 可选，用于 Webhook 校验的飞书 Verification Token。
+  feishu_allow_from:
+    name: 飞书 - 允许用户
+    description: 可选，使用逗号或换行分隔允许访问机器人的飞书用户 ID。
+  feishu_reasoning_channel_id:
+    name: 飞书 - 推理频道 ID
+    description: 可选，用于输出推理过程的飞书频道 ID。
+  discord_enabled:
+    name: Discord - 启用频道
+    description: 启动 PicoClaw 时启用 Discord 频道。
+  discord_token:
+    name: Discord - Bot Token
+    description: Discord 频道使用的 Bot Token。
+  discord_allow_from:
+    name: Discord - 允许用户
+    description: 可选，使用逗号或换行分隔允许访问机器人的 Discord 用户 ID。
+  discord_mention_only:
+    name: Discord - 仅被提及时响应
+    description: 在群聊中仅当机器人被 @ 时才响应。
+  discord_reasoning_channel_id:
+    name: Discord - 推理频道 ID
+    description: 可选，用于输出推理过程的 Discord 频道 ID。
   enable_duckduckgo:
-    name: 启用 DuckDuckGo 搜索
+    name: Web Search - 启用 DuckDuckGo 搜索
     description: 是否启用 DuckDuckGo 作为默认 Web Search 回退方案。
   brave_api_key:
-    name: Brave API Key
+    name: Web Search - Brave API Key
     description: 可选的 Brave Search API Key。
   tavily_api_key:
-    name: Tavily API Key
+    name: Web Search - Tavily API Key
     description: 可选的 Tavily API Key。
   searxng_base_url:
-    name: SearXNG 地址
+    name: Web Search - SearXNG 地址
     description: 可选的 SearXNG 服务地址。
+  use_raw_config:
+    name: 高级 - 启用原始 JSON 配置
+    description: 跳过自动生成逻辑，直接写入完整的 PicoClaw config.json。
+  raw_config:
+    name: 高级 - 原始 PicoClaw 配置 JSON
+    description: 启用原始 JSON 配置时使用的完整 config.json 内容。

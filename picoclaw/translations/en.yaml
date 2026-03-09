@@ -1,49 +1,85 @@
 configuration:
-  use_raw_config:
-    name: Use raw JSON config
-    description: Bypass generated settings and write the full PicoClaw config JSON directly.
-  raw_config:
-    name: Raw PicoClaw config JSON
-    description: Full config.json content used when raw JSON config is enabled.
   model_name:
-    name: Model alias
+    name: Core - Model alias
     description: Internal model alias used by PicoClaw.
   model:
-    name: Model
+    name: Core - Model
     description: Provider and model identifier such as openai/gpt-5.2 or ollama/llama3.
-  discord_enabled:
-    name: Enable Discord channel
-    description: Start PicoClaw with the Discord channel enabled.
-  discord_token:
-    name: Discord bot token
-    description: Bot token used for the Discord channel.
-  discord_allow_from:
-    name: Discord allowed users
-    description: Optional comma or newline separated Discord user IDs that are allowed to use the bot.
-  discord_mention_only:
-    name: Discord mention only
-    description: Only respond in group chats when the bot is mentioned.
-  discord_reasoning_channel_id:
-    name: Discord reasoning channel ID
-    description: Optional Discord channel ID used for reasoning output.
   api_key:
-    name: API key
+    name: Core - API key
     description: API key for the selected provider. Leave empty only for local providers.
   api_base:
-    name: API base URL
+    name: Core - API base URL
     description: Optional custom OpenAI-compatible endpoint.
   request_timeout:
-    name: Request timeout
+    name: Core - Request timeout
     description: Timeout in seconds for upstream model requests.
+  qq_enabled:
+    name: QQ - Enable channel
+    description: Start PicoClaw with the QQ channel enabled.
+  qq_app_id:
+    name: QQ - App ID
+    description: App ID used for the QQ channel.
+  qq_app_secret:
+    name: QQ - App secret
+    description: App secret used for the QQ channel.
+  qq_allow_from:
+    name: QQ - Allowed users
+    description: Optional comma or newline separated QQ user IDs that are allowed to use the bot.
+  qq_reasoning_channel_id:
+    name: QQ - Reasoning channel ID
+    description: Optional QQ channel ID used for reasoning output.
+  feishu_enabled:
+    name: Feishu - Enable channel
+    description: Start PicoClaw with the Feishu channel enabled.
+  feishu_app_id:
+    name: Feishu - App ID
+    description: App ID used for the Feishu channel.
+  feishu_app_secret:
+    name: Feishu - App secret
+    description: App secret used for the Feishu channel.
+  feishu_encrypt_key:
+    name: Feishu - Encrypt key
+    description: Optional Feishu encrypt key used for encrypted event payloads.
+  feishu_verification_token:
+    name: Feishu - Verification token
+    description: Optional Feishu verification token used for webhook validation.
+  feishu_allow_from:
+    name: Feishu - Allowed users
+    description: Optional comma or newline separated Feishu user IDs that are allowed to use the bot.
+  feishu_reasoning_channel_id:
+    name: Feishu - Reasoning channel ID
+    description: Optional Feishu channel ID used for reasoning output.
+  discord_enabled:
+    name: Discord - Enable channel
+    description: Start PicoClaw with the Discord channel enabled.
+  discord_token:
+    name: Discord - Bot token
+    description: Bot token used for the Discord channel.
+  discord_allow_from:
+    name: Discord - Allowed users
+    description: Optional comma or newline separated Discord user IDs that are allowed to use the bot.
+  discord_mention_only:
+    name: Discord - Mention only
+    description: Only respond in group chats when the bot is mentioned.
+  discord_reasoning_channel_id:
+    name: Discord - Reasoning channel ID
+    description: Optional Discord channel ID used for reasoning output.
   enable_duckduckgo:
-    name: Enable DuckDuckGo search
+    name: Web Search - Enable DuckDuckGo search
     description: Enable DuckDuckGo as the default web search fallback.
   brave_api_key:
-    name: Brave API key
+    name: Web Search - Brave API key
     description: Optional Brave Search API key.
   tavily_api_key:
-    name: Tavily API key
+    name: Web Search - Tavily API key
     description: Optional Tavily API key.
   searxng_base_url:
-    name: SearXNG base URL
+    name: Web Search - SearXNG base URL
     description: Optional SearXNG endpoint URL.
+  use_raw_config:
+    name: Advanced - Use raw JSON config
+    description: Bypass generated settings and write the full PicoClaw config JSON directly.
+  raw_config:
+    name: Advanced - Raw PicoClaw config JSON
+    description: Full config.json content used when raw JSON config is enabled.

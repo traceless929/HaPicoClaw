@@ -15,6 +15,18 @@ use_raw_config="$(jq -r '.use_raw_config // false' "${OPTIONS_FILE}")"
 raw_config="$(jq -r '.raw_config // ""' "${OPTIONS_FILE}")"
 model_name="$(jq -r '.model_name // "gpt-5.2"' "${OPTIONS_FILE}")"
 model="$(jq -r '.model // "openai/gpt-5.2"' "${OPTIONS_FILE}")"
+qq_enabled="$(jq -r '.qq_enabled // false' "${OPTIONS_FILE}")"
+qq_app_id="$(jq -r '.qq_app_id // ""' "${OPTIONS_FILE}")"
+qq_app_secret="$(jq -r '.qq_app_secret // ""' "${OPTIONS_FILE}")"
+qq_allow_from_raw="$(jq -r '.qq_allow_from // ""' "${OPTIONS_FILE}")"
+qq_reasoning_channel_id="$(jq -r '.qq_reasoning_channel_id // ""' "${OPTIONS_FILE}")"
+feishu_enabled="$(jq -r '.feishu_enabled // false' "${OPTIONS_FILE}")"
+feishu_app_id="$(jq -r '.feishu_app_id // ""' "${OPTIONS_FILE}")"
+feishu_app_secret="$(jq -r '.feishu_app_secret // ""' "${OPTIONS_FILE}")"
+feishu_encrypt_key="$(jq -r '.feishu_encrypt_key // ""' "${OPTIONS_FILE}")"
+feishu_verification_token="$(jq -r '.feishu_verification_token // ""' "${OPTIONS_FILE}")"
+feishu_allow_from_raw="$(jq -r '.feishu_allow_from // ""' "${OPTIONS_FILE}")"
+feishu_reasoning_channel_id="$(jq -r '.feishu_reasoning_channel_id // ""' "${OPTIONS_FILE}")"
 discord_enabled="$(jq -r '.discord_enabled // false' "${OPTIONS_FILE}")"
 discord_token="$(jq -r '.discord_token // ""' "${OPTIONS_FILE}")"
 discord_allow_from_raw="$(jq -r '.discord_allow_from // ""' "${OPTIONS_FILE}")"
@@ -37,10 +49,32 @@ if [ -z "${api_key}" ] && [[ "${model}" != ollama/* ]]; then
     echo "warning: api_key is empty; this is only expected for local providers like ollama" >&2
 fi
 
+if [ "${qq_enabled}" = "true" ] && { [ -z "${qq_app_id}" ] || [ -z "${qq_app_secret}" ]; }; then
+    echo "qq_app_id and qq_app_secret must not be empty when qq_enabled is true" >&2
+    exit 1
+fi
+
+if [ "${feishu_enabled}" = "true" ] && { [ -z "${feishu_app_id}" ] || [ -z "${feishu_app_secret}" ]; }; then
+    echo "feishu_app_id and feishu_app_secret must not be empty when feishu_enabled is true" >&2
+    exit 1
+fi
+
 if [ "${discord_enabled}" = "true" ] && [ -z "${discord_token}" ]; then
     echo "discord_token must not be empty when discord_enabled is true" >&2
     exit 1
 fi
+
+qq_allow_from_json="$(
+    printf '%s' "${qq_allow_from_raw}" \
+        | tr ',\r' '\n\n' \
+        | jq -Rsc 'split("\n") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))'
+)"
+
+feishu_allow_from_json="$(
+    printf '%s' "${feishu_allow_from_raw}" \
+        | tr ',\r' '\n\n' \
+        | jq -Rsc 'split("\n") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))'
+)"
 
 discord_allow_from_json="$(
     printf '%s' "${discord_allow_from_raw}" \
@@ -64,6 +98,14 @@ else
         --arg workspace "${WORKSPACE_DIR}" \
         --arg model_name "${model_name}" \
         --arg model "${model}" \
+        --arg qq_app_id "${qq_app_id}" \
+        --arg qq_app_secret "${qq_app_secret}" \
+        --arg qq_reasoning_channel_id "${qq_reasoning_channel_id}" \
+        --arg feishu_app_id "${feishu_app_id}" \
+        --arg feishu_app_secret "${feishu_app_secret}" \
+        --arg feishu_encrypt_key "${feishu_encrypt_key}" \
+        --arg feishu_verification_token "${feishu_verification_token}" \
+        --arg feishu_reasoning_channel_id "${feishu_reasoning_channel_id}" \
         --arg discord_token "${discord_token}" \
         --arg discord_reasoning_channel_id "${discord_reasoning_channel_id}" \
         --arg api_key "${api_key}" \
@@ -71,6 +113,10 @@ else
         --arg searxng_base_url "${searxng_base_url}" \
         --arg brave_api_key "${brave_api_key}" \
         --arg tavily_api_key "${tavily_api_key}" \
+        --argjson qq_enabled "${qq_enabled}" \
+        --argjson qq_allow_from "${qq_allow_from_json}" \
+        --argjson feishu_enabled "${feishu_enabled}" \
+        --argjson feishu_allow_from "${feishu_allow_from_json}" \
         --argjson discord_enabled "${discord_enabled}" \
         --argjson discord_allow_from "${discord_allow_from_json}" \
         --argjson discord_mention_only "${discord_mention_only}" \
@@ -97,6 +143,26 @@ else
             )
           ],
           channels: {
+            qq: (
+              {
+                enabled: $qq_enabled,
+                allow_from: $qq_allow_from,
+                reasoning_channel_id: $qq_reasoning_channel_id
+              }
+              + (if $qq_app_id != "" then {app_id: $qq_app_id} else {} end)
+              + (if $qq_app_secret != "" then {app_secret: $qq_app_secret} else {} end)
+            ),
+            feishu: (
+              {
+                enabled: $feishu_enabled,
+                allow_from: $feishu_allow_from,
+                reasoning_channel_id: $feishu_reasoning_channel_id
+              }
+              + (if $feishu_app_id != "" then {app_id: $feishu_app_id} else {} end)
+              + (if $feishu_app_secret != "" then {app_secret: $feishu_app_secret} else {} end)
+              + (if $feishu_encrypt_key != "" then {encrypt_key: $feishu_encrypt_key} else {} end)
+              + (if $feishu_verification_token != "" then {verification_token: $feishu_verification_token} else {} end)
+            ),
             discord: (
               {
                 enabled: $discord_enabled,

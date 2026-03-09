@@ -18,6 +18,18 @@
 - `raw_config`：完整的 `PicoClaw config.json` 内容，启用直写模式后会直接生效
 - `model_name`：PicoClaw 内部使用的模型别名
 - `model`：实际模型标识，例如 `openai/gpt-5.2`、`zhipu/glm-4.7`、`ollama/llama3`
+- `qq_enabled`：是否启用 QQ 频道
+- `qq_app_id`：QQ App ID
+- `qq_app_secret`：QQ App Secret
+- `qq_allow_from`：允许访问机器人的 QQ 用户 ID，支持逗号或换行分隔
+- `qq_reasoning_channel_id`：可选的推理输出频道 ID
+- `feishu_enabled`：是否启用飞书频道
+- `feishu_app_id`：飞书 App ID
+- `feishu_app_secret`：飞书 App Secret
+- `feishu_encrypt_key`：可选的飞书 Encrypt Key
+- `feishu_verification_token`：可选的飞书 Verification Token
+- `feishu_allow_from`：允许访问机器人的飞书用户 ID，支持逗号或换行分隔
+- `feishu_reasoning_channel_id`：可选的推理输出频道 ID
 - `discord_enabled`：是否启用 Discord 频道
 - `discord_token`：Discord Bot Token
 - `discord_allow_from`：允许访问机器人的 Discord 用户 ID，支持逗号或换行分隔
@@ -35,7 +47,7 @@
 
 1. 先填入 `model_name`、`model` 和 `api_key`
 2. 启动 add-on，确认日志中已经开始运行 `picoclaw gateway`
-3. 如果要接 Discord，再补充 Discord Bot Token 和频道相关配置
+3. 如果要接 QQ、飞书或 Discord，再补充对应频道的鉴权和允许用户配置
 4. 再按需补充 Web Search 配置
 5. 后续再继续扩展 Home Assistant 自动化联动
 
@@ -94,6 +106,7 @@ add-on 会把 PicoClaw 的配置和工作目录保存在：
 - `picoclaw gateway` 会直接绑定宿主机 `0.0.0.0:18790`
 - 不再依赖 Home Assistant add-on 的额外端口映射
 - 局域网内可直接通过盒子 IP 加端口访问该 gateway
+- Ingress Terminal 改为使用内部监听端口 `17681`，避免与 HAOS 预设服务占用的 `7681` 冲突
 
 ## 已知限制
 

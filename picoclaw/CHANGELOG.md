@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-beta.11
+
+- 新增 QQ 频道基础配置项，并自动拼接到运行时 `config.json`
+- 新增飞书频道基础配置项，并自动拼接到运行时 `config.json`
+- 优化配置页字段顺序，按核心配置、频道配置、Web Search 和高级配置分组展示
+- Ingress Terminal 改用内部端口 `17681`，避免与 HAOS 预设 `7681` 冲突
+
 ## 0.1.0-beta.10
 
 - 在配置页新增 Discord 频道基础字段
