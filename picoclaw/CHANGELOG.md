@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.10
+
+- 在配置页新增 Discord 频道基础字段
+- 将 Discord 配置拼接到运行时 `config.json` 的 `channels.discord`
+- 支持从配置页直接配置 Discord Token、允许用户、提及响应和推理频道
+
 ## 0.1.0-beta.9
 
 - 将 Ingress 入口调整回单一 `PicoClaw Terminal`

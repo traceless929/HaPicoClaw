@@ -15,6 +15,11 @@ use_raw_config="$(jq -r '.use_raw_config // false' "${OPTIONS_FILE}")"
 raw_config="$(jq -r '.raw_config // ""' "${OPTIONS_FILE}")"
 model_name="$(jq -r '.model_name // "gpt-5.2"' "${OPTIONS_FILE}")"
 model="$(jq -r '.model // "openai/gpt-5.2"' "${OPTIONS_FILE}")"
+discord_enabled="$(jq -r '.discord_enabled // false' "${OPTIONS_FILE}")"
+discord_token="$(jq -r '.discord_token // ""' "${OPTIONS_FILE}")"
+discord_allow_from_raw="$(jq -r '.discord_allow_from // ""' "${OPTIONS_FILE}")"
+discord_mention_only="$(jq -r '.discord_mention_only // false' "${OPTIONS_FILE}")"
+discord_reasoning_channel_id="$(jq -r '.discord_reasoning_channel_id // ""' "${OPTIONS_FILE}")"
 api_key="$(jq -r '.api_key // ""' "${OPTIONS_FILE}")"
 api_base="$(jq -r '.api_base // ""' "${OPTIONS_FILE}")"
 request_timeout="$(jq -r '.request_timeout // 300' "${OPTIONS_FILE}")"
@@ -32,6 +37,17 @@ if [ -z "${api_key}" ] && [[ "${model}" != ollama/* ]]; then
     echo "warning: api_key is empty; this is only expected for local providers like ollama" >&2
 fi
 
+if [ "${discord_enabled}" = "true" ] && [ -z "${discord_token}" ]; then
+    echo "discord_token must not be empty when discord_enabled is true" >&2
+    exit 1
+fi
+
+discord_allow_from_json="$(
+    printf '%s' "${discord_allow_from_raw}" \
+        | tr ',\r' '\n\n' \
+        | jq -Rsc 'split("\n") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))'
+)"
+
 export HOME="${PICOCLAW_HOME}"
 export PICOCLAW_HOME="${PICOCLAW_HOME}"
 export PICOCLAW_CONFIG="${CONFIG_FILE}"
@@ -48,11 +64,16 @@ else
         --arg workspace "${WORKSPACE_DIR}" \
         --arg model_name "${model_name}" \
         --arg model "${model}" \
+        --arg discord_token "${discord_token}" \
+        --arg discord_reasoning_channel_id "${discord_reasoning_channel_id}" \
         --arg api_key "${api_key}" \
         --arg api_base "${api_base}" \
         --arg searxng_base_url "${searxng_base_url}" \
         --arg brave_api_key "${brave_api_key}" \
         --arg tavily_api_key "${tavily_api_key}" \
+        --argjson discord_enabled "${discord_enabled}" \
+        --argjson discord_allow_from "${discord_allow_from_json}" \
+        --argjson discord_mention_only "${discord_mention_only}" \
         --argjson request_timeout "${request_timeout}" \
         --argjson enable_duckduckgo "${enable_duckduckgo}" \
         '
@@ -75,6 +96,17 @@ else
               + (if $api_base != "" then {api_base: $api_base} else {} end)
             )
           ],
+          channels: {
+            discord: (
+              {
+                enabled: $discord_enabled,
+                allow_from: $discord_allow_from,
+                mention_only: $discord_mention_only,
+                reasoning_channel_id: $discord_reasoning_channel_id
+              }
+              + (if $discord_token != "" then {token: $discord_token} else {} end)
+            )
+          },
           tools: {
             web: {
               duckduckgo: {

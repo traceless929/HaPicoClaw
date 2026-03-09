@@ -11,6 +11,21 @@ configuration:
   model:
     name: 模型标识
     description: 提供商和模型标识，例如 openai/gpt-5.2 或 ollama/llama3。
+  discord_enabled:
+    name: 启用 Discord 频道
+    description: 启动 PicoClaw 时启用 Discord 频道。
+  discord_token:
+    name: Discord Bot Token
+    description: Discord 频道使用的 Bot Token。
+  discord_allow_from:
+    name: Discord 允许用户
+    description: 可选，使用逗号或换行分隔允许访问机器人的 Discord 用户 ID。
+  discord_mention_only:
+    name: Discord 仅被提及时响应
+    description: 在群聊中仅当机器人被 @ 时才响应。
+  discord_reasoning_channel_id:
+    name: Discord 推理频道 ID
+    description: 可选，用于输出推理过程的 Discord 频道 ID。
   api_key:
     name: API Key
     description: 所选模型提供商的 API Key，本地模型场景可留空。

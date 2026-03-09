@@ -18,6 +18,11 @@
 - `raw_config`：完整的 `PicoClaw config.json` 内容，启用直写模式后会直接生效
 - `model_name`：PicoClaw 内部使用的模型别名
 - `model`：实际模型标识，例如 `openai/gpt-5.2`、`zhipu/glm-4.7`、`ollama/llama3`
+- `discord_enabled`：是否启用 Discord 频道
+- `discord_token`：Discord Bot Token
+- `discord_allow_from`：允许访问机器人的 Discord 用户 ID，支持逗号或换行分隔
+- `discord_mention_only`：群聊中仅在被提及时响应
+- `discord_reasoning_channel_id`：可选的推理输出频道 ID
 - `api_key`：模型服务的 API Key，本地 `ollama` 场景可留空
 - `api_base`：自定义 OpenAI 兼容接口地址，可选
 - `request_timeout`：请求超时时间，单位秒
@@ -30,8 +35,9 @@
 
 1. 先填入 `model_name`、`model` 和 `api_key`
 2. 启动 add-on，确认日志中已经开始运行 `picoclaw gateway`
-3. 再按需补充 Web Search 配置
-4. 后续再继续扩展 Home Assistant 自动化联动
+3. 如果要接 Discord，再补充 Discord Bot Token 和频道相关配置
+4. 再按需补充 Web Search 配置
+5. 后续再继续扩展 Home Assistant 自动化联动
 
 ## 高级模式
 
