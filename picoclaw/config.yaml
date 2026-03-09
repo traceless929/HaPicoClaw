@@ -1,6 +1,6 @@
 ---
 name: PicoClaw Gateway
-version: "0.1.0-beta.7"
+version: "0.1.0-beta.8"
 slug: picoclaw_gateway
 description: Lightweight PicoClaw gateway add-on for Home Assistant OS
 url: "https://github.com/traceless929/HaPicoClaw"
@@ -9,7 +9,7 @@ ingress: true
 ingress_port: 7681
 ingress_stream: true
 panel_icon: mdi:console
-panel_title: PicoClaw Terminal
+panel_title: PicoClaw Console
 boot: auto
 init: false
 arch:
@@ -19,7 +19,6 @@ ports:
 ports_description:
   18790/tcp: PicoClaw Gateway
 options:
-  sync_raw_config: false
   use_raw_config: false
   raw_config: ""
   model_name: "gpt-5.2"
@@ -32,7 +31,6 @@ options:
   tavily_api_key: ""
   searxng_base_url: ""
 schema:
-  sync_raw_config: bool
   use_raw_config: bool
   raw_config: str?
   model_name: str

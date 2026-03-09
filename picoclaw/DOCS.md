@@ -4,7 +4,7 @@
 
 这个 add-on 会在 Home Assistant OS 中运行 `PicoClaw gateway`，用于验证轻量化 AI Agent 在智能家居盒子上的常驻部署方式。
 
-同时提供一个基于 Home Assistant Ingress 的 Web Terminal，方便直接在 add-on 容器内查看配置、执行调试命令和触发辅助脚本。
+同时提供一个基于 Home Assistant Ingress 的控制台页面，支持直接编辑运行中的 `config.json`，并提供终端入口、保存和重启辅助操作。
 
 ## 安装前说明
 
@@ -14,7 +14,6 @@
 
 ## 配置项
 
-- `sync_raw_config`：启动时把 `raw_config` 直接同步到运行时 `config.json`
 - `use_raw_config`：是否启用完整 `config.json` 直写模式
 - `raw_config`：完整的 `PicoClaw config.json` 内容，启用直写模式后会直接生效
 - `model_name`：PicoClaw 内部使用的模型别名
@@ -38,16 +37,11 @@
 
 如果你希望完全控制 `PicoClaw` 配置，可以：
 
-1. 打开 `use_raw_config`，或者只打开 `sync_raw_config`
+1. 打开 `use_raw_config`
 2. 把完整 JSON 粘贴到 `raw_config`
 3. 保存后重启 add-on，或者触发 gateway 热重启
 
 启用后，add-on 不再根据单独的模型字段自动生成配置，而是直接使用你提供的完整 `config.json`。
-
-区别是：
-
-- `use_raw_config`：长期使用 `raw_config` 作为主配置来源
-- `sync_raw_config`：启动时把 `raw_config` 强制同步到运行时配置文件
 
 ## 持久化路径
 
@@ -57,23 +51,27 @@ add-on 会把 PicoClaw 的配置和工作目录保存在：
 - `/data/picoclaw/config.json`
 - `/data/picoclaw/workspace`
 
-## Web Terminal
+## Console 页面
 
 安装并启动 add-on 后，可以直接从 Home Assistant 侧边栏或 add-on 页面打开：
 
-- `PicoClaw Terminal`
+- `PicoClaw Console`
+
+控制台页面支持：
+
+- 直接读取和编辑 `/data/picoclaw/.picoclaw/config.json`
+- 保存配置
+- 保存后立即请求重启 `gateway`
+- 在新窗口打开终端
+- 在页面内嵌显示终端
+
+注意：控制台页面编辑的是运行时配置文件。如果你后续又在 Home Assistant 配置页里重新生成配置，或者启用了 `use_raw_config`，这些运行时修改可能会被覆盖。
 
 终端内默认已经带上这些环境变量：
 
 - `HOME=/data/picoclaw`
 - `PICOCLAW_HOME=/data/picoclaw`
 - `PICOCLAW_CONFIG=/data/picoclaw/.picoclaw/config.json`
-
-你可以直接在终端里执行：
-
-- `restart-picoclaw-gateway`
-- `ls /data/picoclaw`
-- `cat /data/picoclaw/.picoclaw/config.json`
 
 ## Gateway 重启
 

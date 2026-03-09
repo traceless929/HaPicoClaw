@@ -1,7 +1,4 @@
 configuration:
-  sync_raw_config:
-    name: Sync raw config to runtime
-    description: Copy the raw PicoClaw config JSON directly to the runtime config file on startup.
   use_raw_config:
     name: Use raw JSON config
     description: Bypass generated settings and write the full PicoClaw config JSON directly.

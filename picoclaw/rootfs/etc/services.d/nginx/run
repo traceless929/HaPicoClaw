@@ -1,0 +1,5 @@
+#!/usr/bin/with-contenv bashio
+set -euo pipefail
+
+mkdir -p /run/nginx
+exec nginx -g 'daemon off;'

@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+import json
+import os
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+CONFIG_FILE = Path("/data/picoclaw/.picoclaw/config.json")
+COMPAT_CONFIG_FILE = Path("/data/picoclaw/config.json")
+RESTART_REQUEST_FILE = Path("/data/picoclaw/restart-gateway")
+
+HTML = """<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PicoClaw Console</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #111827; color: #e5e7eb; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p { margin: 0 0 16px; color: #cbd5e1; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    button, a.button {
+      background: #2563eb; color: white; border: 0; border-radius: 8px; padding: 10px 14px;
+      cursor: pointer; text-decoration: none; font-size: 14px;
+    }
+    button.secondary, a.button.secondary { background: #374151; }
+    button.warn { background: #b45309; }
+    textarea {
+      width: 100%; min-height: 60vh; box-sizing: border-box; border-radius: 10px; border: 1px solid #334155;
+      background: #020617; color: #e2e8f0; padding: 14px; font-family: ui-monospace, monospace; font-size: 14px; line-height: 1.5;
+    }
+    .status { margin: 12px 0; min-height: 22px; color: #93c5fd; white-space: pre-wrap; }
+    .meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; color: #94a3b8; font-size: 13px; }
+    iframe {
+      width: 100%; height: 50vh; border: 1px solid #334155; border-radius: 10px; background: #020617; display: none;
+      margin-top: 16px;
+    }
+    code { background: #1e293b; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>PicoClaw Console</h1>
+    <p>直接编辑运行中的 <code>config.json</code>，并在需要时一键重启 gateway。</p>
+    <p>注意：这里保存的是运行时配置。后续如果你在 Home Assistant 配置页重新生成配置，或启用了原始配置同步，当前修改仍可能被覆盖。</p>
+    <div class="meta">
+      <span>主配置: <code>/data/picoclaw/.picoclaw/config.json</code></span>
+      <span>兼容副本: <code>/data/picoclaw/config.json</code></span>
+    </div>
+    <div class="toolbar">
+      <button onclick="loadConfig()">重新加载</button>
+      <button onclick="saveConfig(false)">保存</button>
+      <button class="warn" onclick="saveConfig(true)">保存并重启 Gateway</button>
+      <button class="secondary" onclick="restartGateway()">仅重启 Gateway</button>
+      <a class="button secondary" href="/terminal/" target="_blank" rel="noreferrer">新窗口打开 Terminal</a>
+      <button class="secondary" onclick="toggleTerminal()">显示/隐藏内嵌 Terminal</button>
+    </div>
+    <div id="status" class="status"></div>
+    <textarea id="editor" spellcheck="false"></textarea>
+    <iframe id="terminal" src="/terminal/"></iframe>
+  </div>
+  <script>
+    const statusEl = document.getElementById("status");
+    const editorEl = document.getElementById("editor");
+    const terminalEl = document.getElementById("terminal");
+
+    function setStatus(message, isError = false) {
+      statusEl.style.color = isError ? "#fca5a5" : "#93c5fd";
+      statusEl.textContent = message;
+    }
+
+    async function loadConfig() {
+      setStatus("正在加载配置...");
+      const response = await fetch("/api/config");
+      if (!response.ok) {
+        setStatus("加载配置失败", true);
+        return;
+      }
+      const data = await response.json();
+      editorEl.value = data.content;
+      setStatus("配置已加载");
+    }
+
+    async function saveConfig(restart) {
+      setStatus("正在保存配置...");
+      let parsed;
+      try {
+        parsed = JSON.parse(editorEl.value);
+      } catch (error) {
+        setStatus("JSON 格式无效: " + error.message, true);
+        return;
+      }
+
+      const response = await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: JSON.stringify(parsed), restart })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(data.error || "保存失败", true);
+        return;
+      }
+      editorEl.value = data.content;
+      setStatus(data.message || "配置已保存");
+    }
+
+    async function restartGateway() {
+      setStatus("正在请求重启 gateway...");
+      const response = await fetch("/api/restart", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(data.error || "重启失败", true);
+        return;
+      }
+      setStatus(data.message || "已请求重启");
+    }
+
+    function toggleTerminal() {
+      terminalEl.style.display = terminalEl.style.display === "block" ? "none" : "block";
+    }
+
+    loadConfig().catch((error) => setStatus("初始化失败: " + error.message, true));
+  </script>
+</body>
+</html>
+"""
+
+
+def ensure_parent(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def read_config_text() -> str:
+    if not CONFIG_FILE.exists():
+        return "{\n  \n}\n"
+    return CONFIG_FILE.read_text(encoding="utf-8")
+
+
+def write_config_text(content: str) -> str:
+    parsed = json.loads(content)
+    normalized = json.dumps(parsed, ensure_ascii=False, indent=2) + "\n"
+    ensure_parent(CONFIG_FILE)
+    CONFIG_FILE.write_text(normalized, encoding="utf-8")
+    ensure_parent(COMPAT_CONFIG_FILE)
+    COMPAT_CONFIG_FILE.write_text(normalized, encoding="utf-8")
+    return normalized
+
+
+def request_restart() -> None:
+    ensure_parent(RESTART_REQUEST_FILE)
+    RESTART_REQUEST_FILE.touch()
+
+
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        return
+
+    def _send_json(self, payload: dict, status: int = 200) -> None:
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _send_html(self) -> None:
+        data = HTML.encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def do_GET(self):
+        if self.path == "/" or self.path == "":
+            self._send_html()
+            return
+
+        if self.path == "/api/config":
+            self._send_json({"content": read_config_text()})
+            return
+
+        self.send_error(HTTPStatus.NOT_FOUND)
+
+    def do_POST(self):
+        if self.path == "/api/restart":
+            request_restart()
+            self._send_json({"message": "已请求重启 PicoClaw gateway"})
+            return
+
+        if self.path == "/api/config":
+            length = int(self.headers.get("Content-Length", "0"))
+            raw_body = self.rfile.read(length)
+            try:
+                body = json.loads(raw_body.decode("utf-8"))
+                content = body.get("content", "")
+                if not isinstance(content, str) or not content.strip():
+                    raise ValueError("content must be a non-empty string")
+                normalized = write_config_text(content)
+                if body.get("restart") is True:
+                    request_restart()
+                    message = "配置已保存，并已请求重启 gateway"
+                else:
+                    message = "配置已保存"
+                self._send_json({"message": message, "content": normalized})
+                return
+            except Exception as err:
+                self._send_json({"error": str(err)}, status=400)
+                return
+
+        self.send_error(HTTPStatus.NOT_FOUND)
+
+
+def main() -> None:
+    server = ThreadingHTTPServer(("127.0.0.1", 8080), Handler)
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
