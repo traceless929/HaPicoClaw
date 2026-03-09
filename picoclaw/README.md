@@ -13,8 +13,9 @@
 - 支持直接粘贴完整 `PicoClaw config.json`
 - 使用 `/data/picoclaw` 持久化配置与工作目录
 - 以 `gateway` 服务形态常驻运行
+- 使用宿主机网络直接监听本机 `18790`
 - 支持通过触发文件请求 `gateway` 热重启
-- 提供基于 Home Assistant Ingress 的配置编辑器与终端入口
+- 提供基于 Home Assistant Ingress 的 Web Terminal
 - 提供基础 Web Search 配置映射
 
 ## 当前限制
@@ -31,7 +32,6 @@
 - `Dockerfile`：运行镜像定义
 - `rootfs/etc/cont-init.d/00-config.sh`：启动前生成 PicoClaw 配置
 - `rootfs/etc/services.d/picoclaw/run`：PicoClaw 服务入口
-- `rootfs/etc/services.d/editor/run`：Ingress 配置编辑器服务
 - `rootfs/etc/services.d/terminal/run`：Ingress 终端服务入口
 - `DOCS.md`：面向用户的安装说明
 - `CHANGELOG.md`：版本记录

@@ -1,6 +1,6 @@
 ---
 name: PicoClaw Gateway
-version: "0.1.0-beta.8"
+version: "0.1.0-beta.9"
 slug: picoclaw_gateway
 description: Lightweight PicoClaw gateway add-on for Home Assistant OS
 url: "https://github.com/traceless929/HaPicoClaw"
@@ -9,15 +9,12 @@ ingress: true
 ingress_port: 7681
 ingress_stream: true
 panel_icon: mdi:console
-panel_title: PicoClaw Console
+panel_title: PicoClaw Terminal
 boot: auto
 init: false
+host_network: true
 arch:
   - aarch64
-ports:
-  18790/tcp: 18790
-ports_description:
-  18790/tcp: PicoClaw Gateway
 options:
   use_raw_config: false
   raw_config: ""

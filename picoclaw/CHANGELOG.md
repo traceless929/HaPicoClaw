@@ -1,10 +1,10 @@
 # Changelog
 
-## 0.1.0-beta.8
+## 0.1.0-beta.9
 
-- 将 Ingress 首页升级为 `PicoClaw Console`，支持直接编辑运行中的 `config.json`
-- 保留终端入口，并支持在控制台页面内嵌显示 terminal
-- 新增 `保存`、`保存并重启 Gateway` 等操作按钮
+- 将 Ingress 入口调整回单一 `PicoClaw Terminal`
+- 移除配置编辑器首页与 `nginx/python` 相关组件
+- 保留 Web Terminal、`use_raw_config` 和 gateway 热重启能力
 
 ## 0.1.0-beta.6
 
