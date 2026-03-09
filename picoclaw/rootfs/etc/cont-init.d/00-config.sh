@@ -95,3 +95,29 @@ jq -n \
     ' > "${CONFIG_FILE}"
 
 chmod 600 "${CONFIG_FILE}"
+
+echo "Generated PicoClaw config at ${CONFIG_FILE}" >&2
+echo "PicoClaw model alias: ${model_name}" >&2
+echo "PicoClaw upstream model: ${model}" >&2
+
+# Print a redacted config snapshot so add-on logs can show the final structure
+# without leaking provider credentials.
+jq '
+  .model_list |= map(
+    if has("api_key") and .api_key != "" then
+      .api_key = "***redacted***"
+    else
+      .
+    end
+  )
+  | if .tools.web.brave.api_key? != null and .tools.web.brave.api_key != "" then
+      .tools.web.brave.api_key = "***redacted***"
+    else
+      .
+    end
+  | if .tools.web.tavily.api_key? != null and .tools.web.tavily.api_key != "" then
+      .tools.web.tavily.api_key = "***redacted***"
+    else
+      .
+    end
+' "${CONFIG_FILE}" >&2

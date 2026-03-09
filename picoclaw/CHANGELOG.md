@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.4
+
+- 在启动前配置生成脚本中增加脱敏后的 `config.json` 日志输出
+- 便于直接从 Home Assistant add-on 日志中确认最终模型配置结构
+- 用于继续排查 `gateway` 启动阶段的模型解析问题
+
 ## 0.1.0-beta.3
 
 - 修复生成的 `config.json` 默认模型字段，改为 `agents.defaults.model_name`
