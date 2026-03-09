@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.3
+
+- 修复生成的 `config.json` 默认模型字段，改为 `agents.defaults.model_name`
+- 解决 `picoclaw gateway` 启动时报 `model "" not found in model_list` 的问题
+- 便于在 Home Assistant 中升级到包含该修复的新测试版
+
 ## 0.1.0-beta.2
 
 - 改为随仓库携带官方 `aarch64` 二进制 tar 包，避免构建时依赖外部下载
