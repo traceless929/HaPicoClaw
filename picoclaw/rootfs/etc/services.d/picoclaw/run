@@ -1,0 +1,10 @@
+#!/usr/bin/with-contenv bashio
+set -euo pipefail
+
+export HOME="/data/picoclaw"
+export PICOCLAW_HOME="/data/picoclaw"
+export PICOCLAW_CONFIG="/data/picoclaw/config.json"
+export PICOCLAW_GATEWAY_HOST="0.0.0.0"
+export PICOCLAW_GATEWAY_PORT="18790"
+
+exec /usr/bin/picoclaw gateway

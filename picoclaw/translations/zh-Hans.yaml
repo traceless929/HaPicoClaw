@@ -1,0 +1,28 @@
+configuration:
+  model_name:
+    name: 模型别名
+    description: PicoClaw 内部使用的模型别名。
+  model:
+    name: 模型标识
+    description: 提供商和模型标识，例如 openai/gpt-5.2 或 ollama/llama3。
+  api_key:
+    name: API Key
+    description: 所选模型提供商的 API Key，本地模型场景可留空。
+  api_base:
+    name: API 基础地址
+    description: 可选的 OpenAI 兼容接口地址。
+  request_timeout:
+    name: 请求超时
+    description: 上游模型请求超时时间，单位秒。
+  enable_duckduckgo:
+    name: 启用 DuckDuckGo 搜索
+    description: 是否启用 DuckDuckGo 作为默认 Web Search 回退方案。
+  brave_api_key:
+    name: Brave API Key
+    description: 可选的 Brave Search API Key。
+  tavily_api_key:
+    name: Tavily API Key
+    description: 可选的 Tavily API Key。
+  searxng_base_url:
+    name: SearXNG 地址
+    description: 可选的 SearXNG 服务地址。
