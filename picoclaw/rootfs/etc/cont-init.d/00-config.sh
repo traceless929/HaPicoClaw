@@ -3,10 +3,12 @@ set -euo pipefail
 
 OPTIONS_FILE="/data/options.json"
 PICOCLAW_HOME="/data/picoclaw"
-CONFIG_FILE="${PICOCLAW_HOME}/config.json"
+LEGACY_PICOCLAW_HOME="${PICOCLAW_HOME}/.picoclaw"
+CONFIG_FILE="${LEGACY_PICOCLAW_HOME}/config.json"
+COMPAT_CONFIG_FILE="${PICOCLAW_HOME}/config.json"
 WORKSPACE_DIR="${PICOCLAW_HOME}/workspace"
 
-mkdir -p "${PICOCLAW_HOME}" "${WORKSPACE_DIR}"
+mkdir -p "${PICOCLAW_HOME}" "${LEGACY_PICOCLAW_HOME}" "${WORKSPACE_DIR}"
 
 model_name="$(jq -r '.model_name // "gpt-5.2"' "${OPTIONS_FILE}")"
 model="$(jq -r '.model // "openai/gpt-5.2"' "${OPTIONS_FILE}")"
@@ -95,6 +97,8 @@ jq -n \
     ' > "${CONFIG_FILE}"
 
 chmod 600 "${CONFIG_FILE}"
+cp "${CONFIG_FILE}" "${COMPAT_CONFIG_FILE}"
+chmod 600 "${COMPAT_CONFIG_FILE}"
 
 echo "Generated PicoClaw config at ${CONFIG_FILE}" >&2
 echo "PicoClaw model alias: ${model_name}" >&2

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.5
+
+- 修复 `picoclaw v0.2.0` 实际读取配置路径与 add-on 写入路径不一致的问题
+- 改为主写入 `/data/picoclaw/.picoclaw/config.json`，并兼容保留 `/data/picoclaw/config.json`
+- 解决生成配置正确但 `gateway` 仍读取不到默认模型配置的情况
+
 ## 0.1.0-beta.4
 
 - 在启动前配置生成脚本中增加脱敏后的 `config.json` 日志输出
