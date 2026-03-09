@@ -1,4 +1,10 @@
 configuration:
+  use_raw_config:
+    name: 启用原始 JSON 配置
+    description: 跳过自动生成逻辑，直接写入完整的 PicoClaw config.json。
+  raw_config:
+    name: 原始 PicoClaw 配置 JSON
+    description: 启用原始 JSON 配置时使用的完整 config.json 内容。
   model_name:
     name: 模型别名
     description: PicoClaw 内部使用的模型别名。

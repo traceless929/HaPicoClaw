@@ -1,0 +1,7 @@
+#!/usr/bin/with-contenv bashio
+set -euo pipefail
+
+RESTART_REQUEST_FILE="/data/picoclaw/restart-gateway"
+
+touch "${RESTART_REQUEST_FILE}"
+echo "Requested PicoClaw gateway restart via ${RESTART_REQUEST_FILE}"

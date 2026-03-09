@@ -10,8 +10,11 @@
 
 - 随仓库携带并解压 `PicoClaw` 官方 `aarch64` 二进制 tar 包
 - 通过 add-on 选项生成 `config.json`
+- 支持直接粘贴完整 `PicoClaw config.json`
 - 使用 `/data/picoclaw` 持久化配置与工作目录
 - 以 `gateway` 服务形态常驻运行
+- 支持通过触发文件请求 `gateway` 热重启
+- 提供基于 Home Assistant Ingress 的 Web Terminal
 - 提供基础 Web Search 配置映射
 
 ## 当前限制
@@ -28,6 +31,7 @@
 - `Dockerfile`：运行镜像定义
 - `rootfs/etc/cont-init.d/00-config.sh`：启动前生成 PicoClaw 配置
 - `rootfs/etc/services.d/picoclaw/run`：PicoClaw 服务入口
+- `rootfs/etc/services.d/terminal/run`：Ingress Web Terminal 服务入口
 - `DOCS.md`：面向用户的安装说明
 - `CHANGELOG.md`：版本记录
 - `translations/`：配置项名称与说明

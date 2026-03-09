@@ -6,7 +6,7 @@ ENV LANG=C.UTF-8
 
 COPY bin/picoclaw_Linux_arm64.tar.gz /tmp/picoclaw_Linux_arm64.tar.gz
 
-RUN apk add --no-cache ca-certificates curl jq tzdata \
+RUN apk add --no-cache ca-certificates curl jq ttyd tzdata \
     && tar -xzf /tmp/picoclaw_Linux_arm64.tar.gz -C /tmp \
     && install -m 755 /tmp/picoclaw /usr/bin/picoclaw \
     && rm -f /tmp/picoclaw /tmp/picoclaw_Linux_arm64.tar.gz \

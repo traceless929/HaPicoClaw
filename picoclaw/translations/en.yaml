@@ -1,4 +1,10 @@
 configuration:
+  use_raw_config:
+    name: Use raw JSON config
+    description: Bypass generated settings and write the full PicoClaw config JSON directly.
+  raw_config:
+    name: Raw PicoClaw config JSON
+    description: Full config.json content used when raw JSON config is enabled.
   model_name:
     name: Model alias
     description: Internal model alias used by PicoClaw.

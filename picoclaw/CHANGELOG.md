@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-beta.6
+
+- 新增基于 Home Assistant Ingress 的 Web Terminal
+- 在容器内提供带 PicoClaw 环境变量的交互式 shell
+- 支持直接粘贴完整 `PicoClaw config.json`
+- 保留 `restart-picoclaw-gateway` 等调试辅助能力
+
 ## 0.1.0-beta.5
 
 - 修复 `picoclaw v0.2.0` 实际读取配置路径与 add-on 写入路径不一致的问题

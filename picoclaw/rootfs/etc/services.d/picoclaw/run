@@ -3,8 +3,41 @@ set -euo pipefail
 
 export HOME="/data/picoclaw"
 export PICOCLAW_HOME="/data/picoclaw"
-export PICOCLAW_CONFIG="/data/picoclaw/config.json"
+export PICOCLAW_CONFIG="/data/picoclaw/.picoclaw/config.json"
 export PICOCLAW_GATEWAY_HOST="0.0.0.0"
 export PICOCLAW_GATEWAY_PORT="18790"
 
-exec /usr/bin/picoclaw gateway
+RESTART_REQUEST_FILE="/data/picoclaw/restart-gateway"
+
+rm -f "${RESTART_REQUEST_FILE}"
+
+while true; do
+    /usr/bin/picoclaw gateway &
+    gateway_pid=$!
+    restart_requested=0
+
+    while kill -0 "${gateway_pid}" 2>/dev/null; do
+        if [ -f "${RESTART_REQUEST_FILE}" ]; then
+            echo "Gateway restart requested via ${RESTART_REQUEST_FILE}" >&2
+            rm -f "${RESTART_REQUEST_FILE}"
+            restart_requested=1
+            kill -TERM "${gateway_pid}" 2>/dev/null || true
+            break
+        fi
+        sleep 2
+    done
+
+    if wait "${gateway_pid}"; then
+        exit_code=0
+    else
+        exit_code=$?
+    fi
+
+    if [ "${restart_requested}" -eq 1 ]; then
+        echo "Restarting PicoClaw gateway" >&2
+        sleep 1
+        continue
+    fi
+
+    exit "${exit_code}"
+done
