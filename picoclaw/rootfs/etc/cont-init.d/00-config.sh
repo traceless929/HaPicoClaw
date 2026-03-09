@@ -43,7 +43,7 @@ jq -n \
       agents: {
         defaults: {
           workspace: $workspace,
-          model: $model_name,
+          model_name: $model_name,
           max_tool_iterations: 20
         }
       },
