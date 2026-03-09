@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a problem with the add-on, docs, or repository setup.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Please fill in the details below so the issue can be reproduced quickly.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Problem summary
+      description: Describe what happened and what you expected to happen.
+      placeholder: The add-on failed to start after saving the configuration.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Share the relevant runtime environment.
+      placeholder: |
+        Home Assistant version:
+        Add-on version:
+        Device architecture:
+        Model provider:
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest set of steps needed to reproduce the issue.
+      placeholder: |
+        1. Open the add-on configuration
+        2. Save the following settings
+        3. Start the add-on
+        4. Observe the error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant logs, error messages, or screenshots.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add anything else that might help explain the issue.

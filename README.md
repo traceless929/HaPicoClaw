@@ -1,5 +1,7 @@
 # HaPicoClaw
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 这个仓库用于承载基于 `PicoClaw` 的 Home Assistant add-on。
 
 当前包含一个面向 `aarch64` 设备的首版 add-on 骨架，目标设备是 `x88pro20 / RK3566` 这类盒子，优先验证：

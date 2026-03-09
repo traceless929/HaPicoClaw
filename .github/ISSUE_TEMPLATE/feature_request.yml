@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest an enhancement for the add-on or repository tooling.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Please describe the idea clearly so the change can be evaluated and prioritized.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What problem are you trying to solve?
+      placeholder: I want the add-on to expose a simpler setup flow for local model providers.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the feature or behavior you would like to see.
+      placeholder: Add a preset for Ollama that fills in a recommended local endpoint automatically.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any workarounds or alternative approaches you have considered.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add screenshots, examples, or links if they help clarify the request.
