@@ -14,6 +14,7 @@
 
 ## 配置项
 
+- `sync_raw_config`：启动时把 `raw_config` 直接同步到运行时 `config.json`
 - `use_raw_config`：是否启用完整 `config.json` 直写模式
 - `raw_config`：完整的 `PicoClaw config.json` 内容，启用直写模式后会直接生效
 - `model_name`：PicoClaw 内部使用的模型别名
@@ -37,11 +38,16 @@
 
 如果你希望完全控制 `PicoClaw` 配置，可以：
 
-1. 打开 `use_raw_config`
+1. 打开 `use_raw_config`，或者只打开 `sync_raw_config`
 2. 把完整 JSON 粘贴到 `raw_config`
 3. 保存后重启 add-on，或者触发 gateway 热重启
 
 启用后，add-on 不再根据单独的模型字段自动生成配置，而是直接使用你提供的完整 `config.json`。
+
+区别是：
+
+- `use_raw_config`：长期使用 `raw_config` 作为主配置来源
+- `sync_raw_config`：启动时把 `raw_config` 强制同步到运行时配置文件
 
 ## 持久化路径
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.7
+
+- 新增 `sync_raw_config` 开关，支持将配置页中的 `raw_config` 直接同步到运行时 `config.json`
+- 便于通过 Home Assistant 配置页覆盖容器内实际使用的 PicoClaw 配置文件
+- 保留 Ingress Terminal 与 gateway 热重启能力，方便修改后立即验证
+
 ## 0.1.0-beta.6
 
 - 新增基于 Home Assistant Ingress 的 Web Terminal

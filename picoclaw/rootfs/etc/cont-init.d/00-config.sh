@@ -11,6 +11,7 @@ RESTART_REQUEST_FILE="${PICOCLAW_HOME}/restart-gateway"
 
 mkdir -p "${PICOCLAW_HOME}" "${LEGACY_PICOCLAW_HOME}" "${WORKSPACE_DIR}"
 
+sync_raw_config="$(jq -r '.sync_raw_config // false' "${OPTIONS_FILE}")"
 use_raw_config="$(jq -r '.use_raw_config // false' "${OPTIONS_FILE}")"
 raw_config="$(jq -r '.raw_config // ""' "${OPTIONS_FILE}")"
 model_name="$(jq -r '.model_name // "gpt-5.2"' "${OPTIONS_FILE}")"
@@ -36,7 +37,15 @@ export HOME="${PICOCLAW_HOME}"
 export PICOCLAW_HOME="${PICOCLAW_HOME}"
 export PICOCLAW_CONFIG="${CONFIG_FILE}"
 
-if [ "${use_raw_config}" = "true" ]; then
+if [ "${sync_raw_config}" = "true" ]; then
+    if [ -z "${raw_config}" ]; then
+        echo "raw_config must not be empty when sync_raw_config is enabled" >&2
+        exit 1
+    fi
+
+    echo "Syncing raw_config to ${CONFIG_FILE}" >&2
+    printf '%s' "${raw_config}" | jq '.' > "${CONFIG_FILE}"
+elif [ "${use_raw_config}" = "true" ]; then
     if [ -z "${raw_config}" ]; then
         echo "raw_config must not be empty when use_raw_config is enabled" >&2
         exit 1
