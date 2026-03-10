@@ -19,6 +19,7 @@
 - 提供基础 Web Search 配置映射
 - 支持通过 Home Assistant API 生成 PicoClaw 原生 `tools.mcp`
 - 在 workspace 中自动生成 `AGENTS.md`、`TOOLS.md`、`USER.md` 与默认 Home Assistant skill
+- 支持 MCP 自检、HA API / Supervisor API 检测与更细粒度的 HA 调用审计日志
 
 ## 当前限制
 

@@ -52,6 +52,7 @@ ha_enabled="$(jq -r '.ha_enabled // false' "${OPTIONS_FILE}")"
 ha_url="$(jq -r '.ha_url // "http://supervisor/core/api"' "${OPTIONS_FILE}")"
 ha_use_supervisor_token="$(jq -r 'if .ha_use_supervisor_token == null then true else .ha_use_supervisor_token end' "${OPTIONS_FILE}")"
 ha_token="$(jq -r '.ha_token // ""' "${OPTIONS_FILE}")"
+ha_request_timeout="$(jq -r '.ha_request_timeout // 15' "${OPTIONS_FILE}")"
 ha_readonly="$(jq -r '.ha_readonly // false' "${OPTIONS_FILE}")"
 ha_allowed_domains_raw="$(jq -r '.ha_allowed_domains // "light,switch,scene,script"' "${OPTIONS_FILE}")"
 ha_allowed_entities_raw="$(jq -r '.ha_allowed_entities // ""' "${OPTIONS_FILE}")"
@@ -87,6 +88,11 @@ fi
 
 if [ "${ha_enabled}" = "true" ] && [ "${ha_use_supervisor_token}" != "true" ] && [ -z "${ha_token}" ]; then
     echo "ha_token must not be empty when ha_enabled is true and ha_use_supervisor_token is false" >&2
+    exit 1
+fi
+
+if ! [[ "${ha_request_timeout}" =~ ^[0-9]+$ ]] || [ "${ha_request_timeout}" -le 0 ]; then
+    echo "ha_request_timeout must be a positive integer" >&2
     exit 1
 fi
 
@@ -139,6 +145,7 @@ else
         --arg ha_url "${ha_url}" \
         --arg ha_use_supervisor_token "${ha_use_supervisor_token}" \
         --arg ha_token "${ha_token}" \
+        --arg ha_request_timeout "${ha_request_timeout}" \
         --arg ha_readonly "${ha_readonly}" \
         --arg ha_allowed_domains "${ha_allowed_domains_csv}" \
         --arg ha_allowed_entities "${ha_allowed_entities_csv}" \
@@ -264,6 +271,7 @@ else
                         HA_URL: $ha_url,
                         HA_USE_SUPERVISOR_TOKEN: $ha_use_supervisor_token,
                         HA_TOKEN: $ha_token,
+                        HA_REQUEST_TIMEOUT: $ha_request_timeout,
                         HA_READONLY: $ha_readonly,
                         HA_ALLOWED_DOMAINS: $ha_allowed_domains,
                         HA_ALLOWED_ENTITIES: $ha_allowed_entities,

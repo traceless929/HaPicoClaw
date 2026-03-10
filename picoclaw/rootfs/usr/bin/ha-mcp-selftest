@@ -5,6 +5,7 @@ import signal
 import subprocess
 import sys
 import argparse
+import time
 from pathlib import Path
 
 
@@ -181,6 +182,7 @@ def main():
     redacted_env_summary = {
         "HA_URL": env.get("HA_URL", ""),
         "HA_USE_SUPERVISOR_TOKEN": env.get("HA_USE_SUPERVISOR_TOKEN", ""),
+        "HA_REQUEST_TIMEOUT": env.get("HA_REQUEST_TIMEOUT", ""),
         "HA_READONLY": env.get("HA_READONLY", ""),
         "HA_ALLOWED_DOMAINS": env.get("HA_ALLOWED_DOMAINS", ""),
         "HA_ALLOWED_ENTITIES": env.get("HA_ALLOWED_ENTITIES", ""),
@@ -209,6 +211,7 @@ def main():
     )
 
     try:
+        initialize_started = time.monotonic()
         send_message(
             proc.stdin,
             {
@@ -226,8 +229,10 @@ def main():
             },
         )
         initialize_response = recv_message(proc.stdout)
+        initialize_duration_ms = int((time.monotonic() - initialize_started) * 1000)
         log(f"initialize response: {json.dumps(initialize_response, ensure_ascii=False)}", cli_args.json)
 
+        tools_list_started = time.monotonic()
         send_message(
             proc.stdin,
             {
@@ -246,6 +251,7 @@ def main():
             },
         )
         tools_response = recv_message(proc.stdout)
+        tools_list_duration_ms = int((time.monotonic() - tools_list_started) * 1000)
         tools = tools_response.get("result", {}).get("tools", [])
         tool_names = [tool.get("name", "") for tool in tools]
         log(f"tools/list response: {json.dumps(tool_names, ensure_ascii=False)}", cli_args.json)
@@ -256,8 +262,12 @@ def main():
                 "ok": False,
                 "summary": "expected tools missing from tools/list",
                 "details": {
+                    "phase": "tools_list",
                     "tool_names": tool_names,
+                    "tool_count": len(tool_names),
                     "missing_tools": missing_tools,
+                    "initialize_duration_ms": initialize_duration_ms,
+                    "tools_list_duration_ms": tools_list_duration_ms,
                     "initialize_response": initialize_response,
                 },
             }
@@ -271,7 +281,11 @@ def main():
             "ok": True,
             "summary": "MCP self-test passed",
             "details": {
+                "phase": "complete",
                 "tool_names": tool_names,
+                "tool_count": len(tool_names),
+                "initialize_duration_ms": initialize_duration_ms,
+                "tools_list_duration_ms": tools_list_duration_ms,
                 "initialize_response": initialize_response,
             },
         }
@@ -290,7 +304,10 @@ def main():
         result = {
             "ok": False,
             "summary": f"MCP self-test failed: {exc}",
-            "details": {"stderr": stderr_output.strip()},
+            "details": {
+                "phase": "initialize_or_tools_list",
+                "stderr": stderr_output.strip(),
+            },
         }
         if cli_args.json:
             print(json.dumps(result, ensure_ascii=False))

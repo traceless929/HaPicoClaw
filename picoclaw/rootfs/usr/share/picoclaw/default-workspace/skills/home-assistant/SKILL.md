@@ -9,6 +9,14 @@ description: Use when querying Home Assistant entity states, listing available e
 
 当用户想要查询 Home Assistant 实体状态、执行设备控制、运行场景脚本，或排查自动化执行结果时，优先使用这份 skill。
 
+不要用于：
+
+- “在吗”
+- “你好”
+- “收到吗”
+- “说句话”
+- 单纯测试机器人是否在线的消息
+
 ## 目标
 
 - 用 Home Assistant 实时状态回答问题
@@ -18,17 +26,19 @@ description: Use when querying Home Assistant entity states, listing available e
 ## 使用前提
 
 - 仅在 Home Assistant 相关问题上使用这份 skill。
+- 如果用户只是寒暄、闲聊或确认机器人是否在线，直接普通回复，不要启用这份 skill。
 - 优先参考 `AGENTS.md`、`TOOLS.md` 和 `USER.md` 中的约束与偏好。
 - 如果用户提供的名称和系统里的 `entity_id` 不一致，优先尝试结合 `USER.md` 做映射。
 - 优先使用 PicoClaw 实际注册出来的工具名：`mcp_homeassistant_ha_get_state`、`mcp_homeassistant_ha_list_entities`、`mcp_homeassistant_ha_call_service`、`mcp_homeassistant_ha_get_history`。
 
 ## 推荐步骤
 
-1. 先确认用户想查询还是想控制。
-2. 如果实体不明确，先调用 `mcp_homeassistant_ha_list_entities` 查找候选项，或请用户澄清。
-3. 如果要控制设备，先调用 `mcp_homeassistant_ha_get_state` 了解当前状态。
-4. 目标明确且策略允许时，再调用 `mcp_homeassistant_ha_call_service`。
-5. 如果用户在问“刚才有没有发生过”，使用 `mcp_homeassistant_ha_get_history`。
+1. 先确认用户是在闲聊，还是在询问 Home Assistant 相关问题。
+2. 如果只是闲聊或在线测试，直接回复，不调用工具。
+3. 如果实体不明确，先调用 `mcp_homeassistant_ha_list_entities` 查找候选项，或请用户澄清。
+4. 如果要控制设备，先调用 `mcp_homeassistant_ha_get_state` 了解当前状态。
+5. 目标明确且策略允许时，再调用 `mcp_homeassistant_ha_call_service`。
+6. 如果用户在问“刚才有没有发生过”，使用 `mcp_homeassistant_ha_get_history`。
 
 ## 标准操作流程
 

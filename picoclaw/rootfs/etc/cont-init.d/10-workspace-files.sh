@@ -63,6 +63,11 @@ refresh_file_if_legacy \
     'ha_get_state' \
     'mcp_homeassistant_ha_get_state'
 refresh_file_if_legacy \
+    "${TEMPLATE_DIR}/AGENTS.md" \
+    "${WORKSPACE_DIR}/AGENTS.md" \
+    '## 回复风格' \
+    '简单寒暄、连通性测试或闲聊'
+refresh_file_if_legacy \
     "${TEMPLATE_DIR}/TOOLS.md" \
     "${WORKSPACE_DIR}/TOOLS.md" \
     'ha_get_state' \
@@ -78,3 +83,8 @@ refresh_file_if_legacy \
     "${WORKSPACE_DIR}/skills/home-assistant/SKILL.md" \
     'ha_get_state' \
     'mcp_homeassistant_ha_get_state'
+refresh_file_if_legacy \
+    "${TEMPLATE_DIR}/skills/home-assistant/SKILL.md" \
+    "${WORKSPACE_DIR}/skills/home-assistant/SKILL.md" \
+    '## 何时使用' \
+    '如果用户只是寒暄、闲聊或确认机器人是否在线'

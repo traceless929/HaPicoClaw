@@ -89,6 +89,9 @@ configuration:
   ha_token:
     name: Home Assistant - API token
     description: Optional long-lived access token. Required when Supervisor token usage is disabled.
+  ha_request_timeout:
+    name: Home Assistant - API timeout
+    description: Timeout in seconds for Home Assistant API requests used by MCP self-tests and HA tool calls.
   ha_readonly:
     name: Home Assistant - Read-only mode
     description: Only allow state queries and block control service calls.

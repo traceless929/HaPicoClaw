@@ -1,9 +1,16 @@
 # Changelog
 
+## 0.1.0-beta.18
+
+- 新增 `ha_request_timeout` 配置项，并增强 MCP 自检与 HA 工具调用日志的耗时、阶段和错误信息
+- 收紧默认 `AGENTS.md` 与 Home Assistant skill 的触发条件，简单寒暄和在线测试消息不再进入 HA 工具链
+- 启动时会自动迁移旧版不包含闲聊保护规则的 `AGENTS.md` 和 `SKILL.md`
+
 ## 0.1.0-beta.17
 
 - 修复控制页反向代理 Terminal 时对压缩响应的 header/body 处理不一致，减少 HA Ingress 下的 gzip 解码错误
 - 代理上游 `ttyd` 时不再转发 `Accept-Encoding`，并避免透传 `Content-Encoding`
+- 新增 `ha_request_timeout` 配置项，并增强 MCP 自检与 HA 工具调用日志的耗时和错误信息
 
 ## 0.1.0-beta.16
 

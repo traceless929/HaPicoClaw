@@ -89,6 +89,9 @@ configuration:
   ha_token:
     name: Home Assistant - API Token
     description: 可选的长效访问令牌；关闭 Supervisor Token 时必填。
+  ha_request_timeout:
+    name: Home Assistant - API 超时
+    description: Home Assistant API 请求超时时间，单位秒，用于 MCP 自检和 HA 工具调用。
   ha_readonly:
     name: Home Assistant - 只读模式
     description: 启用后只允许查询实体状态，不允许执行控制类服务调用。
