@@ -1,6 +1,6 @@
 ---
 name: PicoClaw Gateway
-version: "0.1.0-beta.12"
+version: "0.1.0-beta.13"
 slug: picoclaw_gateway
 description: Lightweight PicoClaw gateway add-on for Home Assistant OS
 url: "https://github.com/traceless929/HaPicoClaw"
@@ -13,6 +13,7 @@ panel_title: PicoClaw Terminal
 boot: auto
 init: false
 host_network: true
+homeassistant_api: true
 arch:
   - aarch64
 options:
@@ -42,6 +43,13 @@ options:
   brave_api_key: ""
   tavily_api_key: ""
   searxng_base_url: ""
+  ha_enabled: false
+  ha_url: "http://supervisor/core/api"
+  ha_use_supervisor_token: true
+  ha_token: ""
+  ha_readonly: false
+  ha_allowed_domains: "light,switch,scene,script"
+  ha_allowed_entities: ""
   use_raw_config: false
   raw_config: ""
 schema:
@@ -71,5 +79,12 @@ schema:
   brave_api_key: password?
   tavily_api_key: password?
   searxng_base_url: str?
+  ha_enabled: bool
+  ha_url: str?
+  ha_use_supervisor_token: bool
+  ha_token: password?
+  ha_readonly: bool
+  ha_allowed_domains: str?
+  ha_allowed_entities: str?
   use_raw_config: bool
   raw_config: str?

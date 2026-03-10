@@ -77,6 +77,27 @@ configuration:
   searxng_base_url:
     name: Web Search - SearXNG 地址
     description: 可选的 SearXNG 服务地址。
+  ha_enabled:
+    name: Home Assistant - 启用 API 接入
+    description: 启用后会为 PicoClaw 自动配置 Home Assistant MCP 工具。
+  ha_url:
+    name: Home Assistant - API 地址
+    description: Home Assistant API 基础地址，默认使用 add-on 内部可访问的 Supervisor 代理地址。
+  ha_use_supervisor_token:
+    name: Home Assistant - 使用 Supervisor Token
+    description: 启用后优先使用 add-on 注入的 Supervisor Token 访问 HA API。
+  ha_token:
+    name: Home Assistant - API Token
+    description: 可选的长效访问令牌；关闭 Supervisor Token 时必填。
+  ha_readonly:
+    name: Home Assistant - 只读模式
+    description: 启用后只允许查询实体状态，不允许执行控制类服务调用。
+  ha_allowed_domains:
+    name: Home Assistant - 允许域
+    description: 允许控制或查询的域，使用逗号或换行分隔，例如 light、switch、scene、script。
+  ha_allowed_entities:
+    name: Home Assistant - 允许实体
+    description: 可选，进一步限制允许访问的 entity_id，使用逗号或换行分隔。
   use_raw_config:
     name: 高级 - 启用原始 JSON 配置
     description: 跳过自动生成逻辑，直接写入完整的 PicoClaw config.json。

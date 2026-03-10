@@ -1,0 +1,483 @@
+#!/usr/bin/env python3
+import json
+import os
+import sys
+import traceback
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import datetime, timedelta, timezone
+
+
+SERVER_NAME = "ha-mcp-server"
+SERVER_VERSION = "0.1.0-beta.13"
+PROTOCOL_VERSION = "2024-11-05"
+
+
+def env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def env_list(name):
+    raw_value = os.environ.get(name, "")
+    if not raw_value.strip():
+        return []
+
+    items = []
+    for chunk in raw_value.replace("\r", "\n").replace(",", "\n").split("\n"):
+        item = chunk.strip()
+        if item:
+            items.append(item)
+    return items
+
+
+class HomeAssistantClient:
+    def __init__(self):
+        self.base_url = os.environ.get("HA_URL", "http://supervisor/core/api").rstrip("/")
+        configured_token = os.environ.get("HA_TOKEN", "").strip()
+        if configured_token:
+            self.token = configured_token
+        elif env_bool("HA_USE_SUPERVISOR_TOKEN", True):
+            self.token = os.environ.get("SUPERVISOR_TOKEN", "").strip()
+        else:
+            self.token = ""
+
+        self.readonly = env_bool("HA_READONLY", False)
+        self.allowed_domains = {item.lower() for item in env_list("HA_ALLOWED_DOMAINS")}
+        self.allowed_entities = set(env_list("HA_ALLOWED_ENTITIES"))
+        self.audit_log = os.environ.get(
+            "HA_AUDIT_LOG", "/data/picoclaw/logs/homeassistant-mcp-audit.log"
+        )
+
+    def _headers(self):
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        return headers
+
+    def _request(self, method, path, payload=None, query=None):
+        if not self.token:
+            raise ValueError(
+                "Home Assistant token is not available. Enable Supervisor token or provide ha_token."
+            )
+
+        url = f"{self.base_url}{path}"
+        if query:
+            url = f"{url}?{urllib.parse.urlencode(query, doseq=True)}"
+
+        body = None
+        if payload is not None:
+            body = json.dumps(payload).encode("utf-8")
+
+        request = urllib.request.Request(url, data=body, method=method, headers=self._headers())
+
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                content = response.read().decode("utf-8")
+                if not content:
+                    return {}
+                try:
+                    return json.loads(content)
+                except json.JSONDecodeError:
+                    return {"raw": content}
+        except urllib.error.HTTPError as exc:
+            body_text = exc.read().decode("utf-8", errors="replace")
+            try:
+                detail = json.loads(body_text)
+            except json.JSONDecodeError:
+                detail = {"raw": body_text}
+            raise ValueError(
+                f"HA API request failed with {exc.code} {exc.reason}: {json.dumps(detail, ensure_ascii=False)}"
+            ) from exc
+        except urllib.error.URLError as exc:
+            raise ValueError(f"Unable to reach Home Assistant API at {self.base_url}: {exc.reason}") from exc
+
+    def _log(self, action, payload, success, detail=None):
+        os.makedirs(os.path.dirname(self.audit_log), exist_ok=True)
+        record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "action": action,
+            "success": success,
+            "readonly": self.readonly,
+            "payload": payload,
+        }
+        if detail is not None:
+            record["detail"] = detail
+        with open(self.audit_log, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    def _entity_domain(self, entity_id):
+        if "." not in entity_id:
+            raise ValueError(f"Invalid entity_id: {entity_id}")
+        return entity_id.split(".", 1)[0].lower()
+
+    def _ensure_domain_allowed(self, domain):
+        normalized = domain.strip().lower()
+        if not normalized:
+            raise ValueError("Home Assistant domain must not be empty")
+        if self.allowed_domains and normalized not in self.allowed_domains:
+            raise ValueError(
+                f"Domain '{normalized}' is not allowed. Allowed domains: {sorted(self.allowed_domains)}"
+            )
+        return normalized
+
+    def _ensure_entity_allowed(self, entity_id):
+        if not entity_id or not isinstance(entity_id, str):
+            raise ValueError("entity_id must be a non-empty string")
+        domain = self._entity_domain(entity_id)
+        self._ensure_domain_allowed(domain)
+        if self.allowed_entities and entity_id not in self.allowed_entities:
+            raise ValueError(
+                f"Entity '{entity_id}' is not allowed. Allowed entities: {sorted(self.allowed_entities)}"
+            )
+        return entity_id
+
+    def _extract_entity_ids(self, data):
+        if not isinstance(data, dict):
+            return []
+
+        entity_ids = []
+        direct_value = data.get("entity_id")
+        if isinstance(direct_value, str):
+            entity_ids.append(direct_value)
+        elif isinstance(direct_value, list):
+            entity_ids.extend(item for item in direct_value if isinstance(item, str))
+
+        target_value = data.get("target")
+        if isinstance(target_value, dict):
+            target_entity_value = target_value.get("entity_id")
+            if isinstance(target_entity_value, str):
+                entity_ids.append(target_entity_value)
+            elif isinstance(target_entity_value, list):
+                entity_ids.extend(item for item in target_entity_value if isinstance(item, str))
+
+        return entity_ids
+
+    def get_state(self, entity_id):
+        validated_entity = self._ensure_entity_allowed(entity_id)
+        payload = {"entity_id": validated_entity}
+        try:
+            result = self._request(
+                "GET", f"/states/{urllib.parse.quote(validated_entity, safe='')}"
+            )
+            self._log("get_state", payload, True)
+            return result
+        except Exception as exc:
+            self._log("get_state", payload, False, str(exc))
+            raise
+
+    def list_entities(self, domain=""):
+        payload = {"domain": domain}
+        try:
+            states = self._request("GET", "/states")
+            filtered = []
+            requested_domain = domain.strip().lower()
+            if requested_domain:
+                self._ensure_domain_allowed(requested_domain)
+
+            for item in states:
+                entity_id = item.get("entity_id", "")
+                if not entity_id:
+                    continue
+                entity_domain = self._entity_domain(entity_id)
+                if requested_domain and entity_domain != requested_domain:
+                    continue
+                if self.allowed_domains and entity_domain not in self.allowed_domains:
+                    continue
+                if self.allowed_entities and entity_id not in self.allowed_entities:
+                    continue
+
+                attributes = item.get("attributes", {})
+                filtered.append(
+                    {
+                        "entity_id": entity_id,
+                        "state": item.get("state"),
+                        "friendly_name": attributes.get("friendly_name", ""),
+                        "unit_of_measurement": attributes.get("unit_of_measurement", ""),
+                        "device_class": attributes.get("device_class", ""),
+                    }
+                )
+
+            filtered.sort(key=lambda item: item["entity_id"])
+            result = {"count": len(filtered), "entities": filtered}
+            self._log("list_entities", payload, True, {"count": len(filtered)})
+            return result
+        except Exception as exc:
+            self._log("list_entities", payload, False, str(exc))
+            raise
+
+    def call_service(self, domain, service, data=None):
+        if self.readonly:
+            raise ValueError("Home Assistant integration is in read-only mode")
+
+        normalized_domain = self._ensure_domain_allowed(domain)
+        normalized_service = service.strip()
+        if not normalized_service:
+            raise ValueError("service must not be empty")
+        if data is None:
+            data = {}
+        if not isinstance(data, dict):
+            raise ValueError("data must be an object")
+
+        for entity_id in self._extract_entity_ids(data):
+            self._ensure_entity_allowed(entity_id)
+
+        payload = {
+            "domain": normalized_domain,
+            "service": normalized_service,
+            "data": data,
+        }
+        try:
+            result = self._request(
+                "POST",
+                f"/services/{urllib.parse.quote(normalized_domain, safe='')}/{urllib.parse.quote(normalized_service, safe='')}",
+                payload=data,
+            )
+            self._log("call_service", payload, True)
+            return {
+                "domain": normalized_domain,
+                "service": normalized_service,
+                "response": result,
+            }
+        except Exception as exc:
+            self._log("call_service", payload, False, str(exc))
+            raise
+
+    def get_history(self, entity_id, start_time="", end_time=""):
+        validated_entity = self._ensure_entity_allowed(entity_id)
+        if start_time:
+            start_value = start_time
+        else:
+            start_value = (datetime.now(timezone.utc) - timedelta(hours=24)).replace(
+                microsecond=0
+            ).isoformat()
+
+        query = {"filter_entity_id": validated_entity}
+        if end_time:
+            query["end_time"] = end_time
+
+        payload = {
+            "entity_id": validated_entity,
+            "start_time": start_value,
+            "end_time": end_time,
+        }
+        try:
+            result = self._request(
+                "GET",
+                f"/history/period/{urllib.parse.quote(start_value, safe='')}",
+                query=query,
+            )
+            self._log("get_history", payload, True)
+            return result
+        except Exception as exc:
+            self._log("get_history", payload, False, str(exc))
+            raise
+
+
+CLIENT = HomeAssistantClient()
+
+
+TOOLS = [
+    {
+        "name": "ha_get_state",
+        "description": "Get the current state and attributes of a Home Assistant entity.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "entity_id": {"type": "string", "description": "Entity ID such as light.living_room"}
+            },
+            "required": ["entity_id"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ha_list_entities",
+        "description": "List Home Assistant entities visible to PicoClaw, optionally filtered by domain.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "domain": {"type": "string", "description": "Optional domain such as light or switch"}
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ha_call_service",
+        "description": "Call a Home Assistant service with optional service data.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "domain": {"type": "string", "description": "Service domain, for example light"},
+                "service": {"type": "string", "description": "Service name, for example turn_on"},
+                "data": {"type": "object", "description": "Optional service data payload"},
+            },
+            "required": ["domain", "service"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "ha_get_history",
+        "description": "Query Home Assistant history for an entity during a time window.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "entity_id": {"type": "string", "description": "Entity ID such as sensor.living_room_temperature"},
+                "start_time": {
+                    "type": "string",
+                    "description": "Optional ISO-8601 start time. Defaults to the last 24 hours.",
+                },
+                "end_time": {"type": "string", "description": "Optional ISO-8601 end time."},
+            },
+            "required": ["entity_id"],
+            "additionalProperties": False,
+        },
+    },
+]
+
+
+def write_message(message):
+    body = json.dumps(message, ensure_ascii=False).encode("utf-8")
+    header = f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
+    sys.stdout.buffer.write(header)
+    sys.stdout.buffer.write(body)
+    sys.stdout.buffer.flush()
+
+
+def write_response(request_id, result):
+    write_message({"jsonrpc": "2.0", "id": request_id, "result": result})
+
+
+def write_error(request_id, code, message):
+    write_message(
+        {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "error": {"code": code, "message": message},
+        }
+    )
+
+
+def read_message():
+    headers = {}
+    while True:
+        line = sys.stdin.buffer.readline()
+        if not line:
+            return None
+        if line in {b"\r\n", b"\n"}:
+            break
+        header_name, _, header_value = line.decode("utf-8").partition(":")
+        headers[header_name.strip().lower()] = header_value.strip()
+
+    content_length = int(headers.get("content-length", "0"))
+    if content_length <= 0:
+        return None
+
+    body = sys.stdin.buffer.read(content_length)
+    if not body:
+        return None
+    return json.loads(body.decode("utf-8"))
+
+
+def handle_tool_call(name, arguments):
+    if name == "ha_get_state":
+        return CLIENT.get_state(arguments["entity_id"])
+    if name == "ha_list_entities":
+        return CLIENT.list_entities(arguments.get("domain", ""))
+    if name == "ha_call_service":
+        return CLIENT.call_service(
+            arguments["domain"], arguments["service"], arguments.get("data", {})
+        )
+    if name == "ha_get_history":
+        return CLIENT.get_history(
+            arguments["entity_id"],
+            arguments.get("start_time", ""),
+            arguments.get("end_time", ""),
+        )
+    raise ValueError(f"Unknown tool: {name}")
+
+
+def handle_request(message):
+    method = message.get("method")
+    request_id = message.get("id")
+    params = message.get("params", {})
+
+    if method == "initialize":
+        write_response(
+            request_id,
+            {
+                "protocolVersion": PROTOCOL_VERSION,
+                "capabilities": {"tools": {}},
+                "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
+            },
+        )
+        return True
+
+    if method == "notifications/initialized":
+        return True
+
+    if method == "ping":
+        write_response(request_id, {})
+        return True
+
+    if method == "tools/list":
+        write_response(request_id, {"tools": TOOLS})
+        return True
+
+    if method == "tools/call":
+        tool_name = params.get("name", "")
+        arguments = params.get("arguments", {})
+        try:
+            result = handle_tool_call(tool_name, arguments)
+            write_response(
+                request_id,
+                {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": json.dumps(result, ensure_ascii=False, indent=2),
+                        }
+                    ],
+                    "isError": False,
+                },
+            )
+        except Exception as exc:
+            write_response(
+                request_id,
+                {
+                    "content": [{"type": "text", "text": str(exc)}],
+                    "isError": True,
+                },
+            )
+        return True
+
+    if method == "exit":
+        return False
+
+    if request_id is not None:
+        write_error(request_id, -32601, f"Method not found: {method}")
+    return True
+
+
+def main():
+    while True:
+        try:
+            message = read_message()
+            if message is None:
+                break
+            if not handle_request(message):
+                break
+        except json.JSONDecodeError as exc:
+            write_error(None, -32700, f"Parse error: {exc}")
+        except Exception as exc:
+            traceback.print_exc(file=sys.stderr)
+            write_error(None, -32603, f"Internal error: {exc}")
+
+
+if __name__ == "__main__":
+    main()

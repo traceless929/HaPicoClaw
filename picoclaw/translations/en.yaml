@@ -77,6 +77,27 @@ configuration:
   searxng_base_url:
     name: Web Search - SearXNG base URL
     description: Optional SearXNG endpoint URL.
+  ha_enabled:
+    name: Home Assistant - Enable API integration
+    description: Automatically configure Home Assistant MCP tools for PicoClaw.
+  ha_url:
+    name: Home Assistant - API URL
+    description: Base Home Assistant API URL. Defaults to the internal Supervisor proxy endpoint.
+  ha_use_supervisor_token:
+    name: Home Assistant - Use Supervisor token
+    description: Prefer the Supervisor token injected into the add-on to access the HA API.
+  ha_token:
+    name: Home Assistant - API token
+    description: Optional long-lived access token. Required when Supervisor token usage is disabled.
+  ha_readonly:
+    name: Home Assistant - Read-only mode
+    description: Only allow state queries and block control service calls.
+  ha_allowed_domains:
+    name: Home Assistant - Allowed domains
+    description: Comma or newline separated HA domains that PicoClaw may query or control, such as light, switch, scene, and script.
+  ha_allowed_entities:
+    name: Home Assistant - Allowed entities
+    description: Optional comma or newline separated entity_id allowlist for finer-grained access control.
   use_raw_config:
     name: Advanced - Use raw JSON config
     description: Bypass generated settings and write the full PicoClaw config JSON directly.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-beta.13
+
+- 新增 Home Assistant API 相关 add-on 配置项，并启用 `homeassistant_api` 权限
+- 自动为 PicoClaw 生成 `tools.mcp` 与 `tools.skills`，默认接入本地 `ha-mcp-server`
+- 新增基于 stdio 的 `ha_get_state`、`ha_list_entities`、`ha_call_service`、`ha_get_history` MCP 工具
+- 首次启动时自动补齐 workspace 下的 `AGENTS.md`、`TOOLS.md`、`USER.md` 和默认 Home Assistant skill
+- 增加 Home Assistant MCP 审计日志路径 `/data/picoclaw/logs/homeassistant-mcp-audit.log`
+
 ## 0.1.0-beta.12
 
 - 升级随仓库携带的 `picoclaw` 二进制到 `0.2.1`

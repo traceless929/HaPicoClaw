@@ -7,8 +7,10 @@ CONFIG_DIR="${PICOCLAW_HOME}/.picoclaw"
 CONFIG_FILE="${CONFIG_DIR}/config.json"
 WORKSPACE_DIR="${PICOCLAW_HOME}/workspace"
 RESTART_REQUEST_FILE="${PICOCLAW_HOME}/restart-gateway"
+LOG_DIR="${PICOCLAW_HOME}/logs"
+HA_AUDIT_LOG="${LOG_DIR}/homeassistant-mcp-audit.log"
 
-mkdir -p "${PICOCLAW_HOME}" "${CONFIG_DIR}" "${WORKSPACE_DIR}"
+mkdir -p "${PICOCLAW_HOME}" "${CONFIG_DIR}" "${WORKSPACE_DIR}" "${LOG_DIR}"
 
 use_raw_config="$(jq -r '.use_raw_config // false' "${OPTIONS_FILE}")"
 raw_config="$(jq -r '.raw_config // ""' "${OPTIONS_FILE}")"
@@ -34,10 +36,17 @@ discord_reasoning_channel_id="$(jq -r '.discord_reasoning_channel_id // ""' "${O
 api_key="$(jq -r '.api_key // ""' "${OPTIONS_FILE}")"
 api_base="$(jq -r '.api_base // ""' "${OPTIONS_FILE}")"
 request_timeout="$(jq -r '.request_timeout // 300' "${OPTIONS_FILE}")"
-enable_duckduckgo="$(jq -r '.enable_duckduckgo // true' "${OPTIONS_FILE}")"
+enable_duckduckgo="$(jq -r 'if .enable_duckduckgo == null then true else .enable_duckduckgo end' "${OPTIONS_FILE}")"
 brave_api_key="$(jq -r '.brave_api_key // ""' "${OPTIONS_FILE}")"
 tavily_api_key="$(jq -r '.tavily_api_key // ""' "${OPTIONS_FILE}")"
 searxng_base_url="$(jq -r '.searxng_base_url // ""' "${OPTIONS_FILE}")"
+ha_enabled="$(jq -r '.ha_enabled // false' "${OPTIONS_FILE}")"
+ha_url="$(jq -r '.ha_url // "http://supervisor/core/api"' "${OPTIONS_FILE}")"
+ha_use_supervisor_token="$(jq -r 'if .ha_use_supervisor_token == null then true else .ha_use_supervisor_token end' "${OPTIONS_FILE}")"
+ha_token="$(jq -r '.ha_token // ""' "${OPTIONS_FILE}")"
+ha_readonly="$(jq -r '.ha_readonly // false' "${OPTIONS_FILE}")"
+ha_allowed_domains_raw="$(jq -r '.ha_allowed_domains // "light,switch,scene,script"' "${OPTIONS_FILE}")"
+ha_allowed_entities_raw="$(jq -r '.ha_allowed_entities // ""' "${OPTIONS_FILE}")"
 
 if [ -z "${model_name}" ] || [ -z "${model}" ]; then
     echo "model_name and model must not be empty" >&2
@@ -63,6 +72,16 @@ if [ "${discord_enabled}" = "true" ] && [ -z "${discord_token}" ]; then
     exit 1
 fi
 
+if [ "${ha_enabled}" = "true" ] && [ -z "${ha_url}" ]; then
+    echo "ha_url must not be empty when ha_enabled is true" >&2
+    exit 1
+fi
+
+if [ "${ha_enabled}" = "true" ] && [ "${ha_use_supervisor_token}" != "true" ] && [ -z "${ha_token}" ]; then
+    echo "ha_token must not be empty when ha_enabled is true and ha_use_supervisor_token is false" >&2
+    exit 1
+fi
+
 qq_allow_from_json="$(
     printf '%s' "${qq_allow_from_raw}" \
         | tr ',\r' '\n\n' \
@@ -81,6 +100,18 @@ discord_allow_from_json="$(
         | jq -Rsc 'split("\n") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))'
 )"
 
+ha_allowed_domains_csv="$(
+    printf '%s' "${ha_allowed_domains_raw}" \
+        | tr ',\r' '\n\n' \
+        | jq -Rrsc 'split("\n") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0)) | join(",")'
+)"
+
+ha_allowed_entities_csv="$(
+    printf '%s' "${ha_allowed_entities_raw}" \
+        | tr ',\r' '\n\n' \
+        | jq -Rrsc 'split("\n") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0)) | join(",")'
+)"
+
 export HOME="${PICOCLAW_HOME}"
 export PICOCLAW_HOME="${PICOCLAW_HOME}"
 export PICOCLAW_CONFIG="${CONFIG_FILE}"
@@ -97,6 +128,13 @@ else
         --arg workspace "${WORKSPACE_DIR}" \
         --arg model_name "${model_name}" \
         --arg model "${model}" \
+        --arg ha_url "${ha_url}" \
+        --arg ha_use_supervisor_token "${ha_use_supervisor_token}" \
+        --arg ha_token "${ha_token}" \
+        --arg ha_readonly "${ha_readonly}" \
+        --arg ha_allowed_domains "${ha_allowed_domains_csv}" \
+        --arg ha_allowed_entities "${ha_allowed_entities_csv}" \
+        --arg ha_audit_log "${HA_AUDIT_LOG}" \
         --arg qq_app_id "${qq_app_id}" \
         --arg qq_app_secret "${qq_app_secret}" \
         --arg qq_reasoning_channel_id "${qq_reasoning_channel_id}" \
@@ -119,6 +157,7 @@ else
         --argjson discord_enabled "${discord_enabled}" \
         --argjson discord_allow_from "${discord_allow_from_json}" \
         --argjson discord_mention_only "${discord_mention_only}" \
+        --argjson ha_enabled "${ha_enabled}" \
         --argjson request_timeout "${request_timeout}" \
         --argjson enable_duckduckgo "${enable_duckduckgo}" \
         '
@@ -127,6 +166,7 @@ else
             defaults: {
               workspace: $workspace,
               model_name: $model_name,
+              restrict_to_workspace: true,
               max_tool_iterations: 20
             }
           },
@@ -203,7 +243,46 @@ else
                   }
                 end
               )
+            },
+            mcp: {
+              enabled: $ha_enabled,
+              servers: (
+                if $ha_enabled then
+                  {
+                    homeassistant: {
+                      enabled: true,
+                      command: "/usr/bin/ha-mcp-server",
+                      env: {
+                        HA_URL: $ha_url,
+                        HA_USE_SUPERVISOR_TOKEN: $ha_use_supervisor_token,
+                        HA_TOKEN: $ha_token,
+                        HA_READONLY: $ha_readonly,
+                        HA_ALLOWED_DOMAINS: $ha_allowed_domains,
+                        HA_ALLOWED_ENTITIES: $ha_allowed_entities,
+                        HA_AUDIT_LOG: $ha_audit_log
+                      }
+                    }
+                  }
+                else
+                  {}
+                end
+              )
+            },
+            skills: {
+              registries: {
+                clawhub: {
+                  enabled: true,
+                  base_url: "https://clawhub.ai",
+                  search_path: "/api/v1/search",
+                  skills_path: "/api/v1/skills",
+                  download_path: "/api/v1/download"
+                }
+              }
             }
+          },
+          gateway: {
+            host: "0.0.0.0",
+            port: 18790
           }
         }
         ' > "${CONFIG_FILE}"
@@ -234,6 +313,11 @@ jq '
     end
   | if .tools.web.tavily.api_key? != null and .tools.web.tavily.api_key != "" then
       .tools.web.tavily.api_key = "***redacted***"
+    else
+      .
+    end
+  | if .tools.mcp.servers.homeassistant.env.HA_TOKEN? != null and .tools.mcp.servers.homeassistant.env.HA_TOKEN != "" then
+      .tools.mcp.servers.homeassistant.env.HA_TOKEN = "***redacted***"
     else
       .
     end
