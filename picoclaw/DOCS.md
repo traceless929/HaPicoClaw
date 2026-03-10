@@ -66,7 +66,6 @@
 add-on 会把 PicoClaw 的配置和工作目录保存在：
 
 - `/data/picoclaw/.picoclaw/config.json`
-- `/data/picoclaw/config.json`
 - `/data/picoclaw/workspace`
 
 ## Web Terminal

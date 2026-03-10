@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.12
+
+- 升级随仓库携带的 `picoclaw` 二进制到 `0.2.1`
+- 切换到 `picoclaw 0.2.1` 的配置路径语义，主配置固定为 `/data/picoclaw/.picoclaw/config.json`
+- 移除对 `/data/picoclaw/config.json` 兼容副本的持续维护
+
 ## 0.1.0-beta.11
 
 - 新增 QQ 频道基础配置项，并自动拼接到运行时 `config.json`

@@ -3,13 +3,12 @@ set -euo pipefail
 
 OPTIONS_FILE="/data/options.json"
 PICOCLAW_HOME="/data/picoclaw"
-LEGACY_PICOCLAW_HOME="${PICOCLAW_HOME}/.picoclaw"
-CONFIG_FILE="${LEGACY_PICOCLAW_HOME}/config.json"
-COMPAT_CONFIG_FILE="${PICOCLAW_HOME}/config.json"
+CONFIG_DIR="${PICOCLAW_HOME}/.picoclaw"
+CONFIG_FILE="${CONFIG_DIR}/config.json"
 WORKSPACE_DIR="${PICOCLAW_HOME}/workspace"
 RESTART_REQUEST_FILE="${PICOCLAW_HOME}/restart-gateway"
 
-mkdir -p "${PICOCLAW_HOME}" "${LEGACY_PICOCLAW_HOME}" "${WORKSPACE_DIR}"
+mkdir -p "${PICOCLAW_HOME}" "${CONFIG_DIR}" "${WORKSPACE_DIR}"
 
 use_raw_config="$(jq -r '.use_raw_config // false' "${OPTIONS_FILE}")"
 raw_config="$(jq -r '.raw_config // ""' "${OPTIONS_FILE}")"
@@ -211,8 +210,7 @@ else
 fi
 
 chmod 600 "${CONFIG_FILE}"
-cp "${CONFIG_FILE}" "${COMPAT_CONFIG_FILE}"
-chmod 600 "${COMPAT_CONFIG_FILE}"
+rm -f "${PICOCLAW_HOME}/config.json"
 rm -f "${RESTART_REQUEST_FILE}"
 
 echo "Generated PicoClaw config at ${CONFIG_FILE}" >&2
