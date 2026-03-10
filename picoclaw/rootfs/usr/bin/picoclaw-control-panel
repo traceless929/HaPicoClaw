@@ -212,6 +212,8 @@ def filter_proxy_headers(headers):
         "host",
         "content-length",
         "transfer-encoding",
+        "content-encoding",
+        "accept-encoding",
         "connection",
         "upgrade",
         "keep-alive",
@@ -264,11 +266,12 @@ async def proxy_terminal(request):
             headers=filter_proxy_headers(request.headers),
             data=body,
             allow_redirects=False,
+            auto_decompress=False,
         ) as upstream_response:
             response_body = await upstream_response.read()
             response = web.Response(status=upstream_response.status, body=response_body)
             for key, value in upstream_response.headers.items():
-                if key.lower() in {"content-length", "transfer-encoding", "connection"}:
+                if key.lower() in {"content-length", "transfer-encoding", "connection", "content-encoding"}:
                     continue
                 response.headers[key] = value
             return response

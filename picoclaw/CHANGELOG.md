@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-beta.17
+
+- 修复控制页反向代理 Terminal 时对压缩响应的 header/body 处理不一致，减少 HA Ingress 下的 gzip 解码错误
+- 代理上游 `ttyd` 时不再转发 `Accept-Encoding`，并避免透传 `Content-Encoding`
+
 ## 0.1.0-beta.16
 
 - 修复 Ingress 控制页下诊断接口仍使用绝对路径，导致在 HA Ingress 中返回非 JSON 响应的问题
