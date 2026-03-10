@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.14
+
+- 调整默认 workspace 规则文件和 Home Assistant skill，引导 agent 使用 PicoClaw 实际注册的 `mcp_homeassistant_*` 工具名
+- 启动时会自动迁移旧版引用 `ha_*` 工具名或缺少 skill 元数据的 `AGENTS.md`、`TOOLS.md` 和 `SKILL.md`
+- 自动配置模式下会兼容合并已有 `config.json`，减少升级时对非托管配置的覆盖
+
 ## 0.1.0-beta.13
 
 - 新增 Home Assistant API 相关 add-on 配置项，并启用 `homeassistant_api` 权限
@@ -7,12 +13,6 @@
 - 新增基于 stdio 的 `ha_get_state`、`ha_list_entities`、`ha_call_service`、`ha_get_history` MCP 工具
 - 首次启动时自动补齐 workspace 下的 `AGENTS.md`、`TOOLS.md`、`USER.md` 和默认 Home Assistant skill
 - 增加 Home Assistant MCP 审计日志路径 `/data/picoclaw/logs/homeassistant-mcp-audit.log`
-
-## Unreleased
-
-- 调整默认 workspace 规则文件和 skill，引导 agent 使用 PicoClaw 实际注册的 `mcp_homeassistant_*` 工具名
-- 启动时会自动迁移旧版引用 `ha_*` 工具名的 `AGENTS.md`、`TOOLS.md` 和 `SKILL.md`
-- 自动配置模式下会兼容合并已有 `config.json`，减少升级时对非托管配置的覆盖
 
 ## 0.1.0-beta.12
 
