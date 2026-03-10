@@ -1,3 +1,8 @@
+---
+name: home-assistant
+description: Use when querying Home Assistant entity states, listing available entities, controlling allowed devices, running scenes or scripts, or checking recent entity history through the built-in mcp_homeassistant_ha_* MCP tools.
+---
+
 # Home Assistant Control
 
 ## 何时使用
@@ -15,14 +20,15 @@
 - 仅在 Home Assistant 相关问题上使用这份 skill。
 - 优先参考 `AGENTS.md`、`TOOLS.md` 和 `USER.md` 中的约束与偏好。
 - 如果用户提供的名称和系统里的 `entity_id` 不一致，优先尝试结合 `USER.md` 做映射。
+- 优先使用 PicoClaw 实际注册出来的工具名：`mcp_homeassistant_ha_get_state`、`mcp_homeassistant_ha_list_entities`、`mcp_homeassistant_ha_call_service`、`mcp_homeassistant_ha_get_history`。
 
 ## 推荐步骤
 
 1. 先确认用户想查询还是想控制。
-2. 如果实体不明确，先调用 `ha_list_entities` 查找候选项，或请用户澄清。
-3. 如果要控制设备，先调用 `ha_get_state` 了解当前状态。
-4. 目标明确且策略允许时，再调用 `ha_call_service`。
-5. 如果用户在问“刚才有没有发生过”，使用 `ha_get_history`。
+2. 如果实体不明确，先调用 `mcp_homeassistant_ha_list_entities` 查找候选项，或请用户澄清。
+3. 如果要控制设备，先调用 `mcp_homeassistant_ha_get_state` 了解当前状态。
+4. 目标明确且策略允许时，再调用 `mcp_homeassistant_ha_call_service`。
+5. 如果用户在问“刚才有没有发生过”，使用 `mcp_homeassistant_ha_get_history`。
 
 ## 标准操作流程
 
@@ -30,7 +36,7 @@
 
 1. 判断用户是否已经给出明确 `entity_id` 或足够明确的设备名称。
 2. 如果名称模糊，先列出候选实体。
-3. 调用 `ha_get_state`。
+3. 调用 `mcp_homeassistant_ha_get_state`。
 4. 用自然语言总结状态，不要只复述原始 JSON。
 
 ### 执行控制
@@ -38,14 +44,14 @@
 1. 明确目标实体。
 2. 先读取当前状态。
 3. 如果当前已经满足目标状态，直接告诉用户，不重复执行。
-4. 如果需要执行控制，再调用 `ha_call_service`。
+4. 如果需要执行控制，再调用 `mcp_homeassistant_ha_call_service`。
 5. 返回执行结果和目标实体。
 
 ### 查询历史
 
 1. 明确目标实体和时间范围。
 2. 如果用户没有给时间范围，默认理解为最近 24 小时。
-3. 调用 `ha_get_history`。
+3. 调用 `mcp_homeassistant_ha_get_history`。
 4. 总结关键变化，不要把整段原始历史直接抛给用户。
 
 ## 控制策略

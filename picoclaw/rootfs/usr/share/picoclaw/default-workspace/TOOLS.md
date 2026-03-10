@@ -2,15 +2,22 @@
 
 本工作区默认启用了以下 Home Assistant MCP 工具。
 
+PicoClaw 会把 `homeassistant` MCP server 暴露的工具注册为带前缀的实际工具名，因此你在推理和调用时，应优先使用这些名字：
+
+- `mcp_homeassistant_ha_get_state`
+- `mcp_homeassistant_ha_list_entities`
+- `mcp_homeassistant_ha_call_service`
+- `mcp_homeassistant_ha_get_history`
+
 ## 使用顺序建议
 
 1. 先判断用户是在问状态、找设备、执行控制，还是排查历史。
-2. 不确定目标实体时，先用 `ha_list_entities`。
-3. 要执行控制时，优先先用 `ha_get_state`。
-4. 只有目标明确且策略允许时，才使用 `ha_call_service`。
-5. 需要判断过去一段时间内发生过什么时，使用 `ha_get_history`。
+2. 不确定目标实体时，先用 `mcp_homeassistant_ha_list_entities`。
+3. 要执行控制时，优先先用 `mcp_homeassistant_ha_get_state`。
+4. 只有目标明确且策略允许时，才使用 `mcp_homeassistant_ha_call_service`。
+5. 需要判断过去一段时间内发生过什么时，使用 `mcp_homeassistant_ha_get_history`。
 
-## `ha_get_state`
+## `mcp_homeassistant_ha_get_state`
 
 读取单个实体的当前状态与属性。
 
@@ -26,7 +33,7 @@
 - `attributes`
 - `friendly_name`
 
-## `ha_list_entities`
+## `mcp_homeassistant_ha_list_entities`
 
 列出当前允许访问的 Home Assistant 实体，可选按域过滤。
 
@@ -42,7 +49,7 @@
 - `friendly_name`
 - 当前 `state`
 
-## `ha_call_service`
+## `mcp_homeassistant_ha_call_service`
 
 调用 Home Assistant 服务，例如 `light.turn_on`、`switch.turn_off`、`scene.turn_on`。
 
@@ -69,7 +76,7 @@
 {"entity_id":"light.bedroom_main","brightness_pct":30}
 ```
 
-## `ha_get_history`
+## `mcp_homeassistant_ha_get_history`
 
 查询某个实体在一段时间内的历史状态。
 
@@ -90,6 +97,6 @@
 ## 常见注意事项
 
 - 所有工具都受 `ha_allowed_domains` 和 `ha_allowed_entities` 约束。
-- `ha_call_service` 还会受 `ha_readonly` 影响。
+- `mcp_homeassistant_ha_call_service` 还会受 `ha_readonly` 影响。
 - 如果用户只是问“开了吗”，不要直接执行写操作。
 - 如果工具报错，优先把错误原因翻译成用户能理解的说明，再给排查建议。

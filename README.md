@@ -18,7 +18,7 @@
 
 - 新增 Home Assistant API 相关 add-on 配置项
 - 自动为 PicoClaw 生成原生 `tools.mcp` 与 `tools.skills`
-- 内置本地 `ha-mcp-server`，提供 `ha_get_state`、`ha_list_entities`、`ha_call_service`、`ha_get_history`
+- 内置本地 `ha-mcp-server`，通过 PicoClaw 的 MCP 注册机制暴露 Home Assistant 工具
 - 首次启动时自动生成默认 `AGENTS.md`、`TOOLS.md`、`USER.md` 和 `skills/home-assistant/SKILL.md`
 - 补充了 Home Assistant 配置、实体查找和排错文档
 

@@ -71,6 +71,12 @@
 
 如果你想手工定义 `tools.mcp`、`tools.skills` 或其他上游高级能力，也推荐通过这个模式直接写完整配置。
 
+未启用 `use_raw_config` 时，add-on 会在启动时生成一份托管配置，并尽量与已有的 `config.json` 做兼容合并：
+
+- add-on 托管的模型、频道、HA MCP 和基础 gateway 字段会按当前配置更新
+- 已有 `config.json` 中未被 add-on 托管的其他顶层字段会尽量保留
+- 旧配置如果不是合法 JSON，会先备份再生成新配置
+
 ## Home Assistant API 与 MCP
 
 启用 `ha_enabled` 后，add-on 会自动为 PicoClaw 生成一套可用的 `tools.mcp` 配置，并在容器内通过本地 `ha-mcp-server` 直连 Home Assistant API。
@@ -79,16 +85,16 @@
 
 - 优先使用 `http://supervisor/core/api`
 - 优先使用 add-on 自动注入的 Supervisor Token
-- 自动启用一组基础 `ha_*` MCP 工具
+- 自动启用一组基础 Home Assistant MCP 工具
 - 默认允许域为 `light,switch,scene,script`
 - 默认保留 `ClawHub` skill registry
 
-当前自动生成的 MCP 工具包括：
+PicoClaw 会按 `mcp_<server>_<tool>` 的方式注册 MCP 工具，因此当前实际可见的工具名包括：
 
-- `ha_get_state`
-- `ha_list_entities`
-- `ha_call_service`
-- `ha_get_history`
+- `mcp_homeassistant_ha_get_state`
+- `mcp_homeassistant_ha_list_entities`
+- `mcp_homeassistant_ha_call_service`
+- `mcp_homeassistant_ha_get_history`
 
 如果你只想查询状态而不希望执行控制，可以打开：
 

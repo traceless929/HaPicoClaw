@@ -9,6 +9,14 @@ WORKSPACE_DIR="${PICOCLAW_HOME}/workspace"
 RESTART_REQUEST_FILE="${PICOCLAW_HOME}/restart-gateway"
 LOG_DIR="${PICOCLAW_HOME}/logs"
 HA_AUDIT_LOG="${LOG_DIR}/homeassistant-mcp-audit.log"
+GENERATED_CONFIG_TEMP="${CONFIG_DIR}/config.generated.$$.$(date +%s).json"
+MERGED_CONFIG_TEMP="${CONFIG_DIR}/config.merged.$$.$(date +%s).json"
+
+cleanup() {
+    rm -f "${GENERATED_CONFIG_TEMP}" "${MERGED_CONFIG_TEMP}"
+}
+
+trap cleanup EXIT
 
 mkdir -p "${PICOCLAW_HOME}" "${CONFIG_DIR}" "${WORKSPACE_DIR}" "${LOG_DIR}"
 
@@ -285,7 +293,63 @@ else
             port: 18790
           }
         }
-        ' > "${CONFIG_FILE}"
+        ' > "${GENERATED_CONFIG_TEMP}"
+
+    if [ -f "${CONFIG_FILE}" ] && jq empty "${CONFIG_FILE}" >/dev/null 2>&1; then
+        jq -s '
+            def merge_agents($old; $new):
+              ($old // {}) * ($new // {})
+              | .defaults = (($old.defaults // {}) * ($new.defaults // {}));
+
+            def merge_channels($old; $new):
+              ($old // {}) * ($new // {})
+              | .qq = (($old.qq // {}) * ($new.qq // {}))
+              | .feishu = (($old.feishu // {}) * ($new.feishu // {}))
+              | .discord = (($old.discord // {}) * ($new.discord // {}));
+
+            def merge_tools($old; $new):
+              ($old // {}) * ($new // {})
+              | .web = (($old.web // {}) * ($new.web // {}))
+              | .mcp = (($old.mcp // {}) * ($new.mcp // {}))
+              | .mcp.servers = (($old.mcp.servers // {}) * ($new.mcp.servers // {}))
+              | .mcp.servers.homeassistant =
+                  (($old.mcp.servers.homeassistant // {}) * ($new.mcp.servers.homeassistant // {}))
+              | .mcp.servers.homeassistant.env =
+                  (($old.mcp.servers.homeassistant.env // {}) * ($new.mcp.servers.homeassistant.env // {}))
+              | .skills = (($old.skills // {}) * ($new.skills // {}))
+              | .skills.registries = (($old.skills.registries // {}) * ($new.skills.registries // {}))
+              | .skills.registries.clawhub =
+                  (($old.skills.registries.clawhub // {}) * ($new.skills.registries.clawhub // {}));
+
+            def merge_model_list($old; $new):
+              ($new // [])
+              + (
+                  ($old // [])
+                  | map(select(.model_name != (($new[0].model_name // ""))))
+                );
+
+            (.[0] // {}) as $old
+            | (.[1] // {}) as $new
+            | ($old * $new)
+            | .agents = merge_agents($old.agents; $new.agents)
+            | .model_list = merge_model_list($old.model_list; $new.model_list)
+            | .channels = merge_channels($old.channels; $new.channels)
+            | .tools = merge_tools($old.tools; $new.tools)
+            | .gateway = (($old.gateway // {}) * ($new.gateway // {}))
+        ' "${CONFIG_FILE}" "${GENERATED_CONFIG_TEMP}" > "${MERGED_CONFIG_TEMP}"
+
+        mv "${MERGED_CONFIG_TEMP}" "${CONFIG_FILE}"
+        echo "Merged existing PicoClaw config with generated add-on settings" >&2
+    else
+        if [ -f "${CONFIG_FILE}" ]; then
+            invalid_backup="${CONFIG_FILE}.bak-invalid-$(date +%Y%m%d%H%M%S)"
+            cp "${CONFIG_FILE}" "${invalid_backup}"
+            echo "Existing config was invalid JSON, backed up to ${invalid_backup}" >&2
+        fi
+
+        mv "${GENERATED_CONFIG_TEMP}" "${CONFIG_FILE}"
+        echo "Generated fresh PicoClaw config at ${CONFIG_FILE}" >&2
+    fi
 fi
 
 chmod 600 "${CONFIG_FILE}"
