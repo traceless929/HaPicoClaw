@@ -1,6 +1,6 @@
 ---
 name: PicoClaw Gateway
-version: "0.1.0-beta.14"
+version: "0.1.0-beta.15"
 slug: picoclaw_gateway
 description: Lightweight PicoClaw gateway add-on for Home Assistant OS
 url: "https://github.com/traceless929/HaPicoClaw"
@@ -8,12 +8,13 @@ startup: services
 ingress: true
 ingress_port: 17681
 ingress_stream: true
-panel_icon: mdi:console
-panel_title: PicoClaw Terminal
+panel_icon: mdi:robot-outline
+panel_title: PicoClaw Control
 boot: auto
 init: false
 host_network: true
 homeassistant_api: true
+hassio_api: true
 arch:
   - aarch64
 options:

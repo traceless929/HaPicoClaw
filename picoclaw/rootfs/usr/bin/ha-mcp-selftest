@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+import json
+import os
+import signal
+import subprocess
+import sys
+import argparse
+from pathlib import Path
+
+
+PROTOCOL_VERSION = "2024-11-05"
+EXPECTED_TOOLS = {
+    "ha_get_state",
+    "ha_list_entities",
+    "ha_call_service",
+    "ha_get_history",
+}
+
+
+def log(message, json_mode):
+    if not json_mode:
+        print(f"HA MCP self-test: {message}", file=sys.stderr, flush=True)
+
+
+def load_json(path):
+    with open(path, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def parse_env_file(path):
+    env = {}
+    if not path:
+        return env
+
+    env_path = Path(path)
+    if not env_path.exists():
+        raise FileNotFoundError(f"env_file not found: {path}")
+
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        env[key.strip()] = value.strip()
+    return env
+
+
+class TimeoutExpired(Exception):
+    pass
+
+
+def handle_alarm(signum, frame):
+    raise TimeoutExpired("timed out while waiting for MCP response")
+
+
+def with_timeout(timeout_seconds, callback):
+    previous_handler = signal.signal(signal.SIGALRM, handle_alarm)
+    signal.alarm(timeout_seconds)
+    try:
+        return callback()
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, previous_handler)
+
+
+def recv_message(stream, timeout_seconds=10):
+    def _read():
+        headers = {}
+        while True:
+            line = stream.readline()
+            if not line:
+                raise RuntimeError("MCP server closed the stream unexpectedly")
+            if line in (b"\r\n", b"\n"):
+                break
+            header_name, _, header_value = line.decode("utf-8").partition(":")
+            headers[header_name.strip().lower()] = header_value.strip()
+
+        content_length = int(headers.get("content-length", "0"))
+        if content_length <= 0:
+            raise RuntimeError("received MCP response without a valid Content-Length header")
+
+        body = stream.read(content_length)
+        if not body:
+            raise RuntimeError("MCP server closed the stream while sending the response body")
+        return json.loads(body.decode("utf-8"))
+
+    return with_timeout(timeout_seconds, _read)
+
+
+def send_message(stream, payload):
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    header = f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
+    stream.write(header)
+    stream.write(body)
+    stream.flush()
+
+
+def build_server_env(server_config):
+    env = os.environ.copy()
+    env.update(parse_env_file(server_config.get("env_file", "")))
+    env.update(server_config.get("env", {}))
+    return env
+
+
+def terminate_process(proc):
+    if proc.poll() is not None:
+        return
+    try:
+        proc.terminate()
+        proc.wait(timeout=3)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=3)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--json", action="store_true")
+    cli_args = parser.parse_args()
+
+    config_path = os.environ.get("PICOCLAW_CONFIG", "/data/picoclaw/.picoclaw/config.json")
+    if not Path(config_path).exists():
+        result = {"ok": False, "summary": "config file not found", "details": {"config_path": config_path}}
+        if cli_args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            log(f"skipped, config file not found at {config_path}", False)
+        return 0
+
+    config = load_json(config_path)
+    mcp_config = config.get("tools", {}).get("mcp", {})
+    if not mcp_config.get("enabled", False):
+        result = {"ok": False, "summary": "tools.mcp.enabled is false", "details": {}}
+        if cli_args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            log("skipped, tools.mcp.enabled is false", False)
+        return 0
+
+    server_config = mcp_config.get("servers", {}).get("homeassistant", {})
+    if not server_config.get("enabled", False):
+        result = {
+            "ok": False,
+            "summary": "tools.mcp.servers.homeassistant.enabled is false or missing",
+            "details": {},
+        }
+        if cli_args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            log("skipped, tools.mcp.servers.homeassistant.enabled is false or missing", False)
+        return 0
+
+    server_type = server_config.get("type", "stdio")
+    if server_type not in ("stdio", ""):
+        result = {
+            "ok": False,
+            "summary": f"unsupported server type: {server_type}",
+            "details": {"server_type": server_type},
+        }
+        if cli_args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            log(f"skipped, unsupported server type for self-test: {server_type}", False)
+        return 0
+
+    command = server_config.get("command", "").strip()
+    command_args = server_config.get("args", [])
+    if not command:
+        result = {
+            "ok": False,
+            "summary": "tools.mcp.servers.homeassistant.command is empty",
+            "details": {},
+        }
+        if cli_args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            log("failed, tools.mcp.servers.homeassistant.command is empty", False)
+        return 1
+
+    env = build_server_env(server_config)
+    redacted_env_summary = {
+        "HA_URL": env.get("HA_URL", ""),
+        "HA_USE_SUPERVISOR_TOKEN": env.get("HA_USE_SUPERVISOR_TOKEN", ""),
+        "HA_READONLY": env.get("HA_READONLY", ""),
+        "HA_ALLOWED_DOMAINS": env.get("HA_ALLOWED_DOMAINS", ""),
+        "HA_ALLOWED_ENTITIES": env.get("HA_ALLOWED_ENTITIES", ""),
+    }
+
+    log(
+        "starting stdio handshake "
+        + json.dumps(
+            {
+                "command": command,
+                "args": command_args,
+                "env": redacted_env_summary,
+            },
+            ensure_ascii=False,
+        )
+        ,
+        cli_args.json,
+    )
+
+    proc = subprocess.Popen(
+        [command, *command_args],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+
+    try:
+        send_message(
+            proc.stdin,
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": PROTOCOL_VERSION,
+                    "capabilities": {},
+                    "clientInfo": {
+                        "name": "ha-picoclaw-selftest",
+                        "version": "0.1.0",
+                    },
+                },
+            },
+        )
+        initialize_response = recv_message(proc.stdout)
+        log(f"initialize response: {json.dumps(initialize_response, ensure_ascii=False)}", cli_args.json)
+
+        send_message(
+            proc.stdin,
+            {
+                "jsonrpc": "2.0",
+                "method": "notifications/initialized",
+                "params": {},
+            },
+        )
+        send_message(
+            proc.stdin,
+            {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/list",
+                "params": {},
+            },
+        )
+        tools_response = recv_message(proc.stdout)
+        tools = tools_response.get("result", {}).get("tools", [])
+        tool_names = [tool.get("name", "") for tool in tools]
+        log(f"tools/list response: {json.dumps(tool_names, ensure_ascii=False)}", cli_args.json)
+
+        missing_tools = sorted(EXPECTED_TOOLS.difference(tool_names))
+        if missing_tools:
+            result = {
+                "ok": False,
+                "summary": "expected tools missing from tools/list",
+                "details": {
+                    "tool_names": tool_names,
+                    "missing_tools": missing_tools,
+                    "initialize_response": initialize_response,
+                },
+            }
+            if cli_args.json:
+                print(json.dumps(result, ensure_ascii=False))
+            else:
+                log(f"warning, expected tools missing from tools/list: {missing_tools}", False)
+            return 1
+
+        result = {
+            "ok": True,
+            "summary": "MCP self-test passed",
+            "details": {
+                "tool_names": tool_names,
+                "initialize_response": initialize_response,
+            },
+        }
+        if cli_args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            log(f"passed, registered tools: {tool_names}", False)
+        return 0
+    except Exception as exc:
+        stderr_output = ""
+        try:
+            stderr_output = os.read(proc.stderr.fileno(), 4096).decode("utf-8", errors="replace")
+        except Exception:
+            stderr_output = ""
+
+        result = {
+            "ok": False,
+            "summary": f"MCP self-test failed: {exc}",
+            "details": {"stderr": stderr_output.strip()},
+        }
+        if cli_args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            log(f"failed, {exc}", False)
+            if stderr_output.strip():
+                log(f"server stderr: {stderr_output.strip()}", False)
+        return 1
+    finally:
+        terminate_process(proc)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

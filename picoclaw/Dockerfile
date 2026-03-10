@@ -6,7 +6,7 @@ ENV LANG=C.UTF-8
 
 COPY bin/picoclaw_Linux_arm64.tar.gz /tmp/picoclaw_Linux_arm64.tar.gz
 
-RUN apk add --no-cache ca-certificates curl jq python3 ttyd tzdata \
+RUN apk add --no-cache ca-certificates curl jq py3-aiohttp python3 ttyd tzdata \
     && tar -xzf /tmp/picoclaw_Linux_arm64.tar.gz -C /tmp \
     && install -m 755 /tmp/picoclaw /usr/bin/picoclaw \
     && rm -f /tmp/picoclaw /tmp/picoclaw_Linux_arm64.tar.gz \
@@ -14,4 +14,4 @@ RUN apk add --no-cache ca-certificates curl jq python3 ttyd tzdata \
 
 COPY rootfs /
 
-RUN chmod 755 /usr/bin/ha-mcp-server /etc/cont-init.d/10-workspace-files.sh
+RUN chmod 755 /usr/bin/ha-mcp-server /usr/bin/ha-mcp-selftest /usr/bin/ha-api-selftest /usr/bin/supervisor-api-selftest /usr/bin/picoclaw-control-panel /etc/cont-init.d/10-workspace-files.sh /etc/services.d/webui/run

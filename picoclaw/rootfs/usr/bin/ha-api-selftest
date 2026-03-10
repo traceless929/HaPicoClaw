@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+
+def emit(result, json_mode):
+    if json_mode:
+        print(json.dumps(result, ensure_ascii=False))
+    else:
+        print(f"HA API self-test: {result['summary']}", file=sys.stderr, flush=True)
+        if result.get("details"):
+            print(
+                f"HA API self-test details: {json.dumps(result['details'], ensure_ascii=False)}",
+                file=sys.stderr,
+                flush=True,
+            )
+    return 0 if result["ok"] else 1
+
+
+def load_config():
+    config_path = os.environ.get("PICOCLAW_CONFIG", "/data/picoclaw/.picoclaw/config.json")
+    if not Path(config_path).exists():
+        return {}
+    with open(config_path, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def build_result(ok, summary, **details):
+    return {"ok": ok, "summary": summary, "details": details}
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+
+    config = load_config()
+    env_cfg = (
+        config.get("tools", {})
+        .get("mcp", {})
+        .get("servers", {})
+        .get("homeassistant", {})
+        .get("env", {})
+    )
+
+    ha_url = env_cfg.get("HA_URL", "http://supervisor/core/api").rstrip("/")
+    use_supervisor_token = env_cfg.get("HA_USE_SUPERVISOR_TOKEN", "true").lower() == "true"
+    configured_token = env_cfg.get("HA_TOKEN", "")
+    if configured_token:
+        token = configured_token
+        token_source = "ha_token"
+    elif use_supervisor_token and os.environ.get("SUPERVISOR_TOKEN", ""):
+        token = os.environ["SUPERVISOR_TOKEN"]
+        token_source = "supervisor_token"
+    else:
+        token = ""
+        token_source = "missing"
+
+    if not token:
+        return emit(
+            build_result(
+                False,
+                "token missing, unable to call Home Assistant API",
+                url=ha_url,
+                token_source=token_source,
+            ),
+            args.json,
+        )
+
+    request_url = f"{ha_url}/config"
+    request = urllib.request.Request(
+        request_url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        },
+        method="GET",
+    )
+
+    start = time.monotonic()
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            body = response.read().decode("utf-8", errors="replace")
+            duration_ms = int((time.monotonic() - start) * 1000)
+            parsed = json.loads(body) if body else {}
+            return emit(
+                build_result(
+                    True,
+                    "Home Assistant API reachable",
+                    url=request_url,
+                    token_source=token_source,
+                    http_status=response.status,
+                    duration_ms=duration_ms,
+                    location_name=parsed.get("location_name", ""),
+                    unit_system=parsed.get("unit_system", {}),
+                ),
+                args.json,
+            )
+    except urllib.error.HTTPError as exc:
+        duration_ms = int((time.monotonic() - start) * 1000)
+        body = exc.read().decode("utf-8", errors="replace")
+        return emit(
+            build_result(
+                False,
+                "Home Assistant API returned an HTTP error",
+                url=request_url,
+                token_source=token_source,
+                http_status=exc.code,
+                duration_ms=duration_ms,
+                body=body[:1000],
+            ),
+            args.json,
+        )
+    except Exception as exc:
+        duration_ms = int((time.monotonic() - start) * 1000)
+        return emit(
+            build_result(
+                False,
+                "Home Assistant API request failed",
+                url=request_url,
+                token_source=token_source,
+                duration_ms=duration_ms,
+                error=str(exc),
+            ),
+            args.json,
+        )
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,284 @@
+#!/usr/bin/env python3
+import asyncio
+import json
+import os
+import subprocess
+from aiohttp import ClientSession, WSMsgType, web
+from pathlib import Path
+
+
+LISTEN_HOST = "0.0.0.0"
+LISTEN_PORT = 17681
+TTYD_BASE_URL = "http://127.0.0.1:17682"
+
+
+INDEX_HTML = """<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PicoClaw Control</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 24px; }
+    h1 { margin-top: 0; font-size: 28px; }
+    p { color: #cbd5e1; line-height: 1.6; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0 24px; }
+    button, a.action { border: 0; border-radius: 10px; padding: 12px 16px; font-size: 14px; background: #2563eb; color: white; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+    button.secondary, a.secondary { background: #334155; }
+    button.warning { background: #b45309; }
+    .card { background: #111827; border: 1px solid #334155; border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+    .status { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+    .ok { background: #14532d; color: #bbf7d0; }
+    .fail { background: #7f1d1d; color: #fecaca; }
+    .pending { background: #1e3a8a; color: #bfdbfe; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #020617; padding: 12px; border-radius: 10px; overflow: auto; border: 1px solid #1e293b; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    iframe { width: 100%; height: 720px; border: 1px solid #334155; border-radius: 14px; background: #020617; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>PicoClaw Control</h1>
+    <p>这里可以直接运行 MCP 自检、检查 Home Assistant / Supervisor API 连通性，并在同一入口打开容器内终端。</p>
+
+    <div class="grid">
+      <button onclick="runCheck('/api/diagnostics/all', 'all-result')">运行全部检查</button>
+      <button onclick="runCheck('/api/diagnostics/mcp', 'mcp-result')">MCP 自检</button>
+      <button onclick="runCheck('/api/diagnostics/ha-api', 'ha-result')">检查 HA API</button>
+      <button onclick="runCheck('/api/diagnostics/supervisor-api', 'supervisor-result')">检查 Supervisor API</button>
+      <button class="warning" onclick="runCheck('/api/actions/restart-gateway', 'restart-result')">重启 Gateway</button>
+      <a class="action secondary" href="/terminal/" target="_blank" rel="noopener noreferrer">在新标签打开 Terminal</a>
+    </div>
+
+    <div class="card">
+      <div id="all-status" class="status pending">等待执行</div>
+      <h2>全部检查</h2>
+      <pre id="all-result">点击“运行全部检查”后，这里会显示汇总结果。</pre>
+    </div>
+
+    <div class="card">
+      <div id="mcp-status" class="status pending">等待执行</div>
+      <h2>MCP 自检</h2>
+      <pre id="mcp-result">尚未执行。</pre>
+    </div>
+
+    <div class="card">
+      <div id="ha-status" class="status pending">等待执行</div>
+      <h2>Home Assistant API</h2>
+      <pre id="ha-result">尚未执行。</pre>
+    </div>
+
+    <div class="card">
+      <div id="supervisor-status" class="status pending">等待执行</div>
+      <h2>Supervisor API</h2>
+      <pre id="supervisor-result">尚未执行。</pre>
+    </div>
+
+    <div class="card">
+      <div id="restart-status" class="status pending">等待执行</div>
+      <h2>Gateway 操作</h2>
+      <pre id="restart-result">尚未执行。</pre>
+    </div>
+
+    <div class="card">
+      <h2>内置 Terminal</h2>
+      <iframe src="/terminal/"></iframe>
+    </div>
+  </div>
+
+  <script>
+    function setStatus(prefix, ok, text) {
+      const el = document.getElementById(prefix + '-status');
+      el.textContent = text;
+      el.className = 'status ' + (ok === null ? 'pending' : ok ? 'ok' : 'fail');
+    }
+
+    async function runCheck(url, targetId) {
+      const prefix = targetId.replace('-result', '');
+      setStatus(prefix, null, '执行中');
+      document.getElementById(targetId).textContent = '执行中...';
+      try {
+        const response = await fetch(url, { method: 'POST' });
+        const data = await response.json();
+        const ok = !!data.ok;
+        setStatus(prefix, ok, ok ? '通过' : '失败');
+        document.getElementById(targetId).textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        setStatus(prefix, false, '请求失败');
+        document.getElementById(targetId).textContent = error.toString();
+      }
+    }
+  </script>
+</body>
+</html>
+"""
+
+
+def json_response(result, status=200):
+    return web.Response(
+        text=json.dumps(result, ensure_ascii=False, indent=2),
+        status=status,
+        content_type="application/json",
+    )
+
+
+async def run_command(command):
+    process = await asyncio.create_subprocess_exec(
+        *command,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    stdout_text = stdout.decode("utf-8", errors="replace")
+    stderr_text = stderr.decode("utf-8", errors="replace")
+    payload = {}
+    if stdout_text.strip():
+        try:
+            payload = json.loads(stdout_text)
+        except json.JSONDecodeError:
+            payload = {"ok": False, "summary": "invalid JSON output", "details": {"stdout": stdout_text}}
+    else:
+        payload = {"ok": process.returncode == 0, "summary": "no output", "details": {}}
+
+    payload.setdefault("details", {})
+    payload["details"]["stderr"] = stderr_text.strip()
+    payload["details"]["returncode"] = process.returncode
+    return payload
+
+
+async def index(request):
+    return web.Response(text=INDEX_HTML, content_type="text/html")
+
+
+async def mcp_check(request):
+    return json_response(await run_command(["/usr/bin/ha-mcp-selftest", "--json"]))
+
+
+async def ha_api_check(request):
+    return json_response(await run_command(["/usr/bin/ha-api-selftest", "--json"]))
+
+
+async def supervisor_api_check(request):
+    return json_response(await run_command(["/usr/bin/supervisor-api-selftest", "--json"]))
+
+
+async def all_checks(request):
+    mcp = await run_command(["/usr/bin/ha-mcp-selftest", "--json"])
+    ha_api = await run_command(["/usr/bin/ha-api-selftest", "--json"])
+    supervisor = await run_command(["/usr/bin/supervisor-api-selftest", "--json"])
+    ok = all(item.get("ok") for item in (mcp, ha_api, supervisor))
+    return json_response(
+        {
+            "ok": ok,
+            "summary": "All diagnostics passed" if ok else "One or more diagnostics failed",
+            "details": {
+                "mcp": mcp,
+                "ha_api": ha_api,
+                "supervisor_api": supervisor,
+            },
+        }
+    )
+
+
+async def restart_gateway(request):
+    restart_file = Path("/data/picoclaw/restart-gateway")
+    restart_file.touch()
+    return json_response(
+        {
+            "ok": True,
+            "summary": "Gateway restart requested",
+            "details": {"path": str(restart_file)},
+        }
+    )
+
+
+def filter_proxy_headers(headers):
+    blocked = {
+        "host",
+        "content-length",
+        "transfer-encoding",
+        "connection",
+        "upgrade",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailers",
+    }
+    return {key: value for key, value in headers.items() if key.lower() not in blocked}
+
+
+async def proxy_terminal(request):
+    tail = request.match_info.get("tail", "")
+    upstream_path = tail if tail.startswith("/") else f"/{tail}"
+    if upstream_path == "/":
+        upstream_path = "/"
+    upstream_url = f"{TTYD_BASE_URL}{upstream_path}"
+    if request.query_string:
+        upstream_url = f"{upstream_url}?{request.query_string}"
+
+    ws_probe = web.WebSocketResponse()
+    ws_ready = ws_probe.can_prepare(request)
+    if ws_ready.ok:
+        client_ws = web.WebSocketResponse()
+        await client_ws.prepare(request)
+        async with ClientSession() as session:
+            async with session.ws_connect(upstream_url, headers=filter_proxy_headers(request.headers)) as upstream_ws:
+                async def client_to_upstream():
+                    async for msg in client_ws:
+                        if msg.type == WSMsgType.TEXT:
+                            await upstream_ws.send_str(msg.data)
+                        elif msg.type == WSMsgType.BINARY:
+                            await upstream_ws.send_bytes(msg.data)
+                        elif msg.type == WSMsgType.CLOSE:
+                            await upstream_ws.close()
+
+                async def upstream_to_client():
+                    async for msg in upstream_ws:
+                        if msg.type == WSMsgType.TEXT:
+                            await client_ws.send_str(msg.data)
+                        elif msg.type == WSMsgType.BINARY:
+                            await client_ws.send_bytes(msg.data)
+                        elif msg.type == WSMsgType.CLOSE:
+                            await client_ws.close()
+
+                await asyncio.gather(client_to_upstream(), upstream_to_client())
+        return client_ws
+
+    body = await request.read()
+    async with ClientSession() as session:
+        async with session.request(
+            request.method,
+            upstream_url,
+            headers=filter_proxy_headers(request.headers),
+            data=body,
+            allow_redirects=False,
+        ) as upstream_response:
+            response_body = await upstream_response.read()
+            response = web.Response(status=upstream_response.status, body=response_body)
+            for key, value in upstream_response.headers.items():
+                if key.lower() in {"content-length", "transfer-encoding", "connection"}:
+                    continue
+                response.headers[key] = value
+            return response
+
+
+def create_app():
+    app = web.Application(client_max_size=10 * 1024 * 1024)
+    app.router.add_get("/", index)
+    app.router.add_post("/api/diagnostics/mcp", mcp_check)
+    app.router.add_post("/api/diagnostics/ha-api", ha_api_check)
+    app.router.add_post("/api/diagnostics/supervisor-api", supervisor_api_check)
+    app.router.add_post("/api/diagnostics/all", all_checks)
+    app.router.add_post("/api/actions/restart-gateway", restart_gateway)
+    app.router.add_route("*", "/terminal{tail:.*}", proxy_terminal)
+    return app
+
+
+def main():
+    web.run_app(create_app(), host=LISTEN_HOST, port=LISTEN_PORT)
+
+
+if __name__ == "__main__":
+    main()

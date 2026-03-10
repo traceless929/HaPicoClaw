@@ -4,7 +4,7 @@
 
 这个 add-on 会在 Home Assistant OS 中运行 `PicoClaw gateway`，用于验证轻量化 AI Agent 在智能家居盒子上的常驻部署方式。
 
-同时提供一个基于 Home Assistant Ingress 的 Web Terminal，方便直接在 add-on 容器内查看配置、执行调试命令和触发辅助脚本。
+同时提供一个基于 Home Assistant Ingress 的控制页，内置 MCP 自检、Home Assistant API 检测、Supervisor API 检测和 Web Terminal，方便直接在 add-on 容器内查看配置、执行调试命令和触发辅助脚本。
 
 ## 安装前说明
 
@@ -88,6 +88,7 @@
 - 自动启用一组基础 Home Assistant MCP 工具
 - 默认允许域为 `light,switch,scene,script`
 - 默认保留 `ClawHub` skill registry
+- gateway 启动前会执行一次 HA MCP 自检，并把 `initialize`、`tools/list` 和工具名输出到 add-on 日志
 
 PicoClaw 会按 `mcp_<server>_<tool>` 的方式注册 MCP 工具，因此当前实际可见的工具名包括：
 
@@ -399,11 +400,20 @@ add-on 会把 PicoClaw 的配置和工作目录保存在：
 - `/data/picoclaw/workspace`
 - `/data/picoclaw/logs/homeassistant-mcp-audit.log`
 
-## Web Terminal
+## 控制页与 Terminal
 
 安装并启动 add-on 后，可以直接从 Home Assistant 侧边栏或 add-on 页面打开：
 
-- `PicoClaw Terminal`
+- `PicoClaw Control`
+
+控制页内提供：
+
+- `MCP 自检`
+- `Home Assistant API 检测`
+- `Supervisor API 检测`
+- `重启 Gateway`
+- 内置 Terminal iframe
+- 在新标签页打开 Terminal 的快捷入口
 
 终端内默认已经带上这些环境变量：
 
@@ -485,5 +495,4 @@ add-on 会把 PicoClaw 的配置和工作目录保存在：
 - 目前没有覆盖 PicoClaw 的全部高级配置
 - 当前 Home Assistant 集成仍以 REST API 为主，还没有做实时事件订阅
 - 高风险域默认不建议开放，需要你自行评估白名单
-- 还没有提供 Home Assistant Ingress 页面
 - 当前实现更适合作为开发和验证基础版本

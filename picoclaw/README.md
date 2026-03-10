@@ -15,7 +15,7 @@
 - 以 `gateway` 服务形态常驻运行
 - 使用宿主机网络直接监听本机 `18790`
 - 支持通过触发文件请求 `gateway` 热重启
-- 提供基于 Home Assistant Ingress 的 Web Terminal
+- 提供基于 Home Assistant Ingress 的控制页与内置 Terminal
 - 提供基础 Web Search 配置映射
 - 支持通过 Home Assistant API 生成 PicoClaw 原生 `tools.mcp`
 - 在 workspace 中自动生成 `AGENTS.md`、`TOOLS.md`、`USER.md` 与默认 Home Assistant skill
@@ -26,7 +26,7 @@
 - 只映射了部分 PicoClaw 高级配置项，复杂场景仍建议使用 `raw_config`
 - 当前 Home Assistant 集成主要覆盖基础实体查询与白名单服务调用
 - 还没有把 MQTT / Webhook 能力深度接入
-- 还没有做 Ingress、图形配置向导和完整发布流程
+- 还没有做完整的图形配置向导和发布流程
 
 ## 目录结构
 
@@ -36,8 +36,13 @@
 - `rootfs/etc/cont-init.d/00-config.sh`：启动前生成 PicoClaw 配置
 - `rootfs/etc/cont-init.d/10-workspace-files.sh`：初始化默认 workspace 文件
 - `rootfs/etc/services.d/picoclaw/run`：PicoClaw 服务入口
-- `rootfs/etc/services.d/terminal/run`：Ingress 终端服务入口
+- `rootfs/etc/services.d/webui/run`：Ingress 控制页服务入口
+- `rootfs/etc/services.d/terminal/run`：内置终端服务入口
 - `rootfs/usr/bin/ha-mcp-server`：本地 Home Assistant MCP server
+- `rootfs/usr/bin/ha-mcp-selftest`：MCP 自检脚本
+- `rootfs/usr/bin/ha-api-selftest`：Home Assistant API 连通性检测
+- `rootfs/usr/bin/supervisor-api-selftest`：Supervisor API 连通性检测
+- `rootfs/usr/bin/picoclaw-control-panel`：控制页与诊断接口
 - `DOCS.md`：面向用户的安装说明
 - `CHANGELOG.md`：版本记录
 - `translations/`：配置项名称与说明

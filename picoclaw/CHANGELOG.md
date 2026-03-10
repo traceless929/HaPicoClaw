@@ -1,10 +1,20 @@
 # Changelog
 
+## 0.1.0-beta.15
+
+- 新增 Home Assistant Ingress 控制页，内置 MCP 自检、Home Assistant API 检测、Supervisor API 检测和 Terminal
+- add-on 额外启用 `hassio_api` 权限，便于检测 Supervisor API 可用性
+- 将原有 Terminal 调整到内部端口 `17682`，由控制页统一代理和嵌入
+- 增加 `ha-api-selftest`、`supervisor-api-selftest` 与 `picoclaw-control-panel` 脚本
+
 ## 0.1.0-beta.14
 
 - 调整默认 workspace 规则文件和 Home Assistant skill，引导 agent 使用 PicoClaw 实际注册的 `mcp_homeassistant_*` 工具名
 - 启动时会自动迁移旧版引用 `ha_*` 工具名或缺少 skill 元数据的 `AGENTS.md`、`TOOLS.md` 和 `SKILL.md`
 - 自动配置模式下会兼容合并已有 `config.json`，减少升级时对非托管配置的覆盖
+- gateway 启动前新增 HA MCP 自检日志，便于确认 `initialize`、`tools/list` 和实际注册工具名
+- 新增 Ingress 控制页，支持 MCP 自检、Home Assistant API 检测、Supervisor API 检测和内置 Terminal
+- add-on 额外启用 `hassio_api` 权限，便于检测 Supervisor API
 
 ## 0.1.0-beta.13
 
