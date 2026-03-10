@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.16
+
+- 修复 Ingress 控制页下诊断接口仍使用绝对路径，导致在 HA Ingress 中返回非 JSON 响应的问题
+- 修复内置 Terminal 在控制页内使用绝对路径和错误代理路径导致无法显示的问题
+- 终端服务显式启用 `ttyd --base-path /terminal`，并由控制页按完整路径代理
+
 ## 0.1.0-beta.15
 
 - 新增 Home Assistant Ingress 控制页，内置 MCP 自检、Home Assistant API 检测、Supervisor API 检测和 Terminal

@@ -43,12 +43,12 @@ INDEX_HTML = """<!doctype html>
     <p>这里可以直接运行 MCP 自检、检查 Home Assistant / Supervisor API 连通性，并在同一入口打开容器内终端。</p>
 
     <div class="grid">
-      <button onclick="runCheck('/api/diagnostics/all', 'all-result')">运行全部检查</button>
-      <button onclick="runCheck('/api/diagnostics/mcp', 'mcp-result')">MCP 自检</button>
-      <button onclick="runCheck('/api/diagnostics/ha-api', 'ha-result')">检查 HA API</button>
-      <button onclick="runCheck('/api/diagnostics/supervisor-api', 'supervisor-result')">检查 Supervisor API</button>
-      <button class="warning" onclick="runCheck('/api/actions/restart-gateway', 'restart-result')">重启 Gateway</button>
-      <a class="action secondary" href="/terminal/" target="_blank" rel="noopener noreferrer">在新标签打开 Terminal</a>
+      <button onclick="runCheck('api/diagnostics/all', 'all-result')">运行全部检查</button>
+      <button onclick="runCheck('api/diagnostics/mcp', 'mcp-result')">MCP 自检</button>
+      <button onclick="runCheck('api/diagnostics/ha-api', 'ha-result')">检查 HA API</button>
+      <button onclick="runCheck('api/diagnostics/supervisor-api', 'supervisor-result')">检查 Supervisor API</button>
+      <button class="warning" onclick="runCheck('api/actions/restart-gateway', 'restart-result')">重启 Gateway</button>
+      <a id="terminal-link" class="action secondary" href="terminal/" target="_blank" rel="noopener noreferrer">在新标签打开 Terminal</a>
     </div>
 
     <div class="card">
@@ -83,11 +83,15 @@ INDEX_HTML = """<!doctype html>
 
     <div class="card">
       <h2>内置 Terminal</h2>
-      <iframe src="/terminal/"></iframe>
+      <iframe id="terminal-frame" src="terminal/"></iframe>
     </div>
   </div>
 
   <script>
+    function addonUrl(path) {
+      return new URL(path, new URL('./', window.location.href)).toString();
+    }
+
     function setStatus(prefix, ok, text) {
       const el = document.getElementById(prefix + '-status');
       el.textContent = text;
@@ -99,8 +103,14 @@ INDEX_HTML = """<!doctype html>
       setStatus(prefix, null, '执行中');
       document.getElementById(targetId).textContent = '执行中...';
       try {
-        const response = await fetch(url, { method: 'POST' });
-        const data = await response.json();
+        const response = await fetch(addonUrl(url), { method: 'POST' });
+        const rawText = await response.text();
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch (parseError) {
+          throw new Error('非 JSON 响应: ' + rawText.slice(0, 500));
+        }
         const ok = !!data.ok;
         setStatus(prefix, ok, ok ? '通过' : '失败');
         document.getElementById(targetId).textContent = JSON.stringify(data, null, 2);
@@ -109,6 +119,10 @@ INDEX_HTML = """<!doctype html>
         document.getElementById(targetId).textContent = error.toString();
       }
     }
+
+    const terminalUrl = addonUrl('terminal/');
+    document.getElementById('terminal-link').href = terminalUrl;
+    document.getElementById('terminal-frame').src = terminalUrl;
   </script>
 </body>
 </html>
@@ -210,11 +224,7 @@ def filter_proxy_headers(headers):
 
 
 async def proxy_terminal(request):
-    tail = request.match_info.get("tail", "")
-    upstream_path = tail if tail.startswith("/") else f"/{tail}"
-    if upstream_path == "/":
-        upstream_path = "/"
-    upstream_url = f"{TTYD_BASE_URL}{upstream_path}"
+    upstream_url = f"{TTYD_BASE_URL}{request.path}"
     if request.query_string:
         upstream_url = f"{upstream_url}?{request.query_string}"
 

@@ -12,7 +12,7 @@
 
 ## 最新发布
 
-最新版本：[`v0.1.0-beta.15`](https://github.com/traceless929/HaPicoClaw/releases/tag/v0.1.0-beta.15)
+最新版本：[`v0.1.0-beta.16`](https://github.com/traceless929/HaPicoClaw/releases/tag/v0.1.0-beta.16)
 
 这一版已经补齐了首个可用的 Home Assistant 集成闭环：
 
@@ -23,6 +23,7 @@
 - 补充了 Home Assistant 配置、实体查找和排错文档
 - 新增 MCP 自检与升级兼容逻辑，并开始提供 Ingress 控制页方向
 - 新增 Ingress 控制页，可直接执行 MCP、HA API 和 Supervisor API 检测
+- 修复控制页在 HA Ingress 下的相对路径与内置 Terminal 显示问题
 
 ## 当前能力
 

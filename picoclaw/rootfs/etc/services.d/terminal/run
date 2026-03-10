@@ -1,4 +1,4 @@
 #!/usr/bin/with-contenv bashio
 set -euo pipefail
 
-exec ttyd -W -p 17682 -t titleFixed="PicoClaw Terminal" /usr/bin/picoclaw-shell
+exec ttyd -W -b /terminal -p 17682 -t titleFixed="PicoClaw Terminal" /usr/bin/picoclaw-shell
