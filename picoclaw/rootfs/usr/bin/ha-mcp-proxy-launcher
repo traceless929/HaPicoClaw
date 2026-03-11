@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+set -eu
+
+ha_mcp_url="${HA_MCP_URL:-http://supervisor/core/api/mcp}"
+ha_mcp_use_supervisor_token="${HA_MCP_USE_SUPERVISOR_TOKEN:-true}"
+ha_mcp_token="${HA_MCP_TOKEN:-}"
+
+api_access_token="${ha_mcp_token}"
+if [ -z "${api_access_token}" ] && [ "${ha_mcp_use_supervisor_token}" = "true" ]; then
+    api_access_token="${SUPERVISOR_TOKEN:-}"
+fi
+
+if [ -z "${api_access_token}" ]; then
+    echo "Home Assistant MCP token is not available. Configure ha_mcp_token or enable ha_mcp_use_supervisor_token." >&2
+    exit 1
+fi
+
+export API_ACCESS_TOKEN="${api_access_token}"
+
+exec mcp-proxy --transport=streamablehttp --stateless "${ha_mcp_url}"

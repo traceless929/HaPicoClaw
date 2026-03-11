@@ -60,8 +60,8 @@ mkdir -p \
 refresh_file_if_legacy \
     "${TEMPLATE_DIR}/AGENTS.md" \
     "${WORKSPACE_DIR}/AGENTS.md" \
-    'ha_get_state' \
-    'mcp_homeassistant_ha_get_state'
+    'mcp_homeassistant_ha_get_state' \
+    '当前会话里实际可见的 `mcp_homeassistant_\*`'
 refresh_file_if_legacy \
     "${TEMPLATE_DIR}/AGENTS.md" \
     "${WORKSPACE_DIR}/AGENTS.md" \
@@ -70,8 +70,8 @@ refresh_file_if_legacy \
 refresh_file_if_legacy \
     "${TEMPLATE_DIR}/TOOLS.md" \
     "${WORKSPACE_DIR}/TOOLS.md" \
-    'ha_get_state' \
-    'mcp_homeassistant_ha_get_state'
+    'mcp_homeassistant_ha_get_state' \
+    '不要假设后缀工具名固定不变'
 install_if_missing "${TEMPLATE_DIR}/AGENTS.md" "${WORKSPACE_DIR}/AGENTS.md"
 install_if_missing "${TEMPLATE_DIR}/TOOLS.md" "${WORKSPACE_DIR}/TOOLS.md"
 install_if_missing "${TEMPLATE_DIR}/USER.md" "${WORKSPACE_DIR}/USER.md"
@@ -81,8 +81,8 @@ refresh_skill_if_invalid \
 refresh_file_if_legacy \
     "${TEMPLATE_DIR}/skills/home-assistant/SKILL.md" \
     "${WORKSPACE_DIR}/skills/home-assistant/SKILL.md" \
-    'ha_get_state' \
-    'mcp_homeassistant_ha_get_state'
+    'mcp_homeassistant_ha_get_state' \
+    '不要假设后缀始终固定'
 refresh_file_if_legacy \
     "${TEMPLATE_DIR}/skills/home-assistant/SKILL.md" \
     "${WORKSPACE_DIR}/skills/home-assistant/SKILL.md" \

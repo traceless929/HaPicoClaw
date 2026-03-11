@@ -10,12 +10,6 @@ from pathlib import Path
 
 
 PROTOCOL_VERSION = "2024-11-05"
-EXPECTED_TOOLS = {
-    "ha_get_state",
-    "ha_list_entities",
-    "ha_call_service",
-    "ha_get_history",
-}
 
 
 def log(message, json_mode):
@@ -114,6 +108,16 @@ def terminate_process(proc):
         proc.wait(timeout=3)
 
 
+def parse_timeout(server_config):
+    env = build_server_env(server_config)
+    raw_timeout = env.get("HA_MCP_TIMEOUT", "").strip()
+    try:
+        timeout_seconds = int(raw_timeout) if raw_timeout else 15
+    except ValueError:
+        timeout_seconds = 15
+    return max(5, min(timeout_seconds, 60))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
@@ -179,13 +183,12 @@ def main():
         return 1
 
     env = build_server_env(server_config)
+    response_timeout_seconds = parse_timeout(server_config)
     redacted_env_summary = {
-        "HA_URL": env.get("HA_URL", ""),
-        "HA_USE_SUPERVISOR_TOKEN": env.get("HA_USE_SUPERVISOR_TOKEN", ""),
-        "HA_REQUEST_TIMEOUT": env.get("HA_REQUEST_TIMEOUT", ""),
-        "HA_READONLY": env.get("HA_READONLY", ""),
-        "HA_ALLOWED_DOMAINS": env.get("HA_ALLOWED_DOMAINS", ""),
-        "HA_ALLOWED_ENTITIES": env.get("HA_ALLOWED_ENTITIES", ""),
+        "HA_MCP_URL": env.get("HA_MCP_URL", ""),
+        "HA_MCP_USE_SUPERVISOR_TOKEN": env.get("HA_MCP_USE_SUPERVISOR_TOKEN", ""),
+        "HA_MCP_TIMEOUT": env.get("HA_MCP_TIMEOUT", ""),
+        "has_custom_token": bool(env.get("HA_MCP_TOKEN", "").strip()),
     }
 
     log(
@@ -228,7 +231,7 @@ def main():
                 },
             },
         )
-        initialize_response = recv_message(proc.stdout)
+        initialize_response = recv_message(proc.stdout, timeout_seconds=response_timeout_seconds)
         initialize_duration_ms = int((time.monotonic() - initialize_started) * 1000)
         log(f"initialize response: {json.dumps(initialize_response, ensure_ascii=False)}", cli_args.json)
 
@@ -250,31 +253,30 @@ def main():
                 "params": {},
             },
         )
-        tools_response = recv_message(proc.stdout)
+        tools_response = recv_message(proc.stdout, timeout_seconds=response_timeout_seconds)
         tools_list_duration_ms = int((time.monotonic() - tools_list_started) * 1000)
         tools = tools_response.get("result", {}).get("tools", [])
         tool_names = [tool.get("name", "") for tool in tools]
         log(f"tools/list response: {json.dumps(tool_names, ensure_ascii=False)}", cli_args.json)
 
-        missing_tools = sorted(EXPECTED_TOOLS.difference(tool_names))
-        if missing_tools:
+        if not tool_names:
             result = {
                 "ok": False,
-                "summary": "expected tools missing from tools/list",
+                "summary": "no tools returned from tools/list",
                 "details": {
                     "phase": "tools_list",
                     "tool_names": tool_names,
                     "tool_count": len(tool_names),
-                    "missing_tools": missing_tools,
                     "initialize_duration_ms": initialize_duration_ms,
                     "tools_list_duration_ms": tools_list_duration_ms,
                     "initialize_response": initialize_response,
+                    "tools_response": tools_response,
                 },
             }
             if cli_args.json:
                 print(json.dumps(result, ensure_ascii=False))
             else:
-                log(f"warning, expected tools missing from tools/list: {missing_tools}", False)
+                log("failed, tools/list returned no tools", False)
             return 1
 
         result = {

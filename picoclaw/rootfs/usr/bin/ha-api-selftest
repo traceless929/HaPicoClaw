@@ -35,6 +35,19 @@ def build_result(ok, summary, **details):
     return {"ok": ok, "summary": summary, "details": details}
 
 
+def derive_api_url(env_cfg):
+    raw_api_url = env_cfg.get("HA_URL", "").rstrip("/")
+    if raw_api_url:
+        return raw_api_url
+
+    raw_mcp_url = env_cfg.get("HA_MCP_URL", "http://supervisor/core/api/mcp").rstrip("/")
+    if raw_mcp_url.endswith("/api/mcp"):
+        return raw_mcp_url[: -len("/mcp")]
+    if raw_mcp_url.endswith("/api"):
+        return raw_mcp_url
+    return f"{raw_mcp_url}/api"
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
@@ -49,12 +62,15 @@ def main():
         .get("env", {})
     )
 
-    ha_url = env_cfg.get("HA_URL", "http://supervisor/core/api").rstrip("/")
-    use_supervisor_token = env_cfg.get("HA_USE_SUPERVISOR_TOKEN", "true").lower() == "true"
-    configured_token = env_cfg.get("HA_TOKEN", "")
+    ha_url = derive_api_url(env_cfg)
+    use_supervisor_token = env_cfg.get(
+        "HA_MCP_USE_SUPERVISOR_TOKEN",
+        env_cfg.get("HA_USE_SUPERVISOR_TOKEN", "true"),
+    ).lower() == "true"
+    configured_token = env_cfg.get("HA_MCP_TOKEN", env_cfg.get("HA_TOKEN", ""))
     if configured_token:
         token = configured_token
-        token_source = "ha_token"
+        token_source = "ha_mcp_token"
     elif use_supervisor_token and os.environ.get("SUPERVISOR_TOKEN", ""):
         token = os.environ["SUPERVISOR_TOKEN"]
         token_source = "supervisor_token"

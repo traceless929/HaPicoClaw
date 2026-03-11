@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.20
+
+- 改为通过 `mcp-proxy` 对接 Home Assistant 官方 `mcp_server`，由 PicoClaw 继续以本地 `stdio` MCP 进程方式消费
+- 新增 `ha_mcp_url`、`ha_mcp_use_supervisor_token` 和 `ha_mcp_token` 配置项，并兼容旧版 `ha_url` / `ha_token` 配置回退
+- MCP 自检、HA API 检测、默认 workspace 提示词与用户文档同步切换到官方 MCP 模型，不再依赖固定自研工具名
+
 ## 0.1.0-beta.19
 
 - 修复控制页代理 `ttyd` Terminal 时仍可能请求到压缩资源、导致 iframe 内终端页面显示乱码的问题

@@ -78,29 +78,20 @@ configuration:
     name: Web Search - SearXNG base URL
     description: Optional SearXNG endpoint URL.
   ha_enabled:
-    name: Home Assistant - Enable API integration
-    description: Automatically configure Home Assistant MCP tools for PicoClaw.
-  ha_url:
-    name: Home Assistant - API URL
-    description: Base Home Assistant API URL. Defaults to the internal Supervisor proxy endpoint.
-  ha_use_supervisor_token:
+    name: Home Assistant - Enable MCP integration
+    description: Automatically configure a local proxy for the official Home Assistant MCP server.
+  ha_mcp_url:
+    name: Home Assistant - MCP URL
+    description: Full URL to the official Home Assistant MCP endpoint. Defaults to the internal Supervisor proxy endpoint.
+  ha_mcp_use_supervisor_token:
     name: Home Assistant - Use Supervisor token
-    description: Prefer the Supervisor token injected into the add-on to access the HA API.
-  ha_token:
-    name: Home Assistant - API token
+    description: Prefer the Supervisor token injected into the add-on to access the official MCP endpoint.
+  ha_mcp_token:
+    name: Home Assistant - MCP token
     description: Optional long-lived access token. Required when Supervisor token usage is disabled.
   ha_request_timeout:
-    name: Home Assistant - API timeout
-    description: Timeout in seconds for Home Assistant API requests used by MCP self-tests and HA tool calls.
-  ha_readonly:
-    name: Home Assistant - Read-only mode
-    description: Only allow state queries and block control service calls.
-  ha_allowed_domains:
-    name: Home Assistant - Allowed domains
-    description: Comma or newline separated HA domains that PicoClaw may query or control, such as light, switch, scene, and script.
-  ha_allowed_entities:
-    name: Home Assistant - Allowed entities
-    description: Optional comma or newline separated entity_id allowlist for finer-grained access control.
+    name: Home Assistant - MCP self-test timeout
+    description: Timeout in seconds for the Home Assistant MCP self-test handshake.
   use_raw_config:
     name: Advanced - Use raw JSON config
     description: Bypass generated settings and write the full PicoClaw config JSON directly.

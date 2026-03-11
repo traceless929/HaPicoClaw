@@ -17,15 +17,15 @@
 - 支持通过触发文件请求 `gateway` 热重启
 - 提供基于 Home Assistant Ingress 的控制页与内置 Terminal
 - 提供基础 Web Search 配置映射
-- 支持通过 Home Assistant API 生成 PicoClaw 原生 `tools.mcp`
+- 支持通过 `mcp-proxy` 桥接 Home Assistant 官方 `mcp_server`
 - 在 workspace 中自动生成 `AGENTS.md`、`TOOLS.md`、`USER.md` 与默认 Home Assistant skill
-- 支持 MCP 自检、HA API / Supervisor API 检测与更细粒度的 HA 调用审计日志
+- 支持 MCP 自检、HA API / Supervisor API 检测与 Ingress 控制页诊断
 
 ## 当前限制
 
 - 首版只支持 `aarch64`
 - 只映射了部分 PicoClaw 高级配置项，复杂场景仍建议使用 `raw_config`
-- 当前 Home Assistant 集成主要覆盖基础实体查询与白名单服务调用
+- 当前 Home Assistant 集成依赖官方 `mcp_server` 暴露的工具集合与实体范围
 - 还没有把 MQTT / Webhook 能力深度接入
 - 还没有做完整的图形配置向导和发布流程
 
@@ -39,7 +39,7 @@
 - `rootfs/etc/services.d/picoclaw/run`：PicoClaw 服务入口
 - `rootfs/etc/services.d/webui/run`：Ingress 控制页服务入口
 - `rootfs/etc/services.d/terminal/run`：内置终端服务入口
-- `rootfs/usr/bin/ha-mcp-server`：本地 Home Assistant MCP server
+- `rootfs/usr/bin/ha-mcp-proxy-launcher`：官方 Home Assistant MCP 的本地桥接启动脚本
 - `rootfs/usr/bin/ha-mcp-selftest`：MCP 自检脚本
 - `rootfs/usr/bin/ha-api-selftest`：Home Assistant API 连通性检测
 - `rootfs/usr/bin/supervisor-api-selftest`：Supervisor API 连通性检测
