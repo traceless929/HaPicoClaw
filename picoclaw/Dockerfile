@@ -19,4 +19,4 @@ RUN apk add --no-cache ca-certificates curl jq py3-aiohttp py3-pip python3 ttyd 
 
 COPY rootfs /
 
-RUN chmod 755 /usr/bin/ha-mcp-proxy-launcher /usr/bin/ha-mcp-proxy-manager /usr/bin/ha-mcp-server /usr/bin/ha-mcp-selftest /usr/bin/ha-api-selftest /usr/bin/supervisor-api-selftest /usr/bin/picoclaw-control-panel /etc/cont-init.d/10-workspace-files.sh /etc/services.d/webui/run
+RUN chmod 755 /usr/bin/ha-mcp-proxy-launcher /usr/bin/ha-mcp-proxy-manager /usr/bin/ha-mcp-server /usr/bin/ha-api-selftest /usr/bin/supervisor-api-selftest /usr/bin/picoclaw-control-panel /etc/cont-init.d/10-workspace-files.sh /etc/services.d/webui/run

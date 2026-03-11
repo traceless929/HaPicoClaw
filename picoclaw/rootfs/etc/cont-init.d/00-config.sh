@@ -76,7 +76,6 @@ ha_mcp_token="$(jq -r '.ha_mcp_token // ""' "${OPTIONS_FILE}")"
 legacy_ha_url="$(jq -r '.ha_url // ""' "${OPTIONS_FILE}")"
 legacy_ha_use_supervisor_token="$(jq -r 'if .ha_use_supervisor_token == null then "" else .ha_use_supervisor_token end' "${OPTIONS_FILE}")"
 legacy_ha_token="$(jq -r '.ha_token // ""' "${OPTIONS_FILE}")"
-ha_request_timeout="$(jq -r '.ha_request_timeout // 15' "${OPTIONS_FILE}")"
 
 if [ -n "${ha_mcp_url_raw}" ]; then
     ha_mcp_url="$(normalize_ha_mcp_url "${ha_mcp_url_raw}")"
@@ -132,11 +131,6 @@ if [ "${ha_enabled}" = "true" ] && [ "${ha_mcp_use_supervisor_token}" != "true" 
     exit 1
 fi
 
-if ! [[ "${ha_request_timeout}" =~ ^[0-9]+$ ]] || [ "${ha_request_timeout}" -le 0 ]; then
-    echo "ha_request_timeout must be a positive integer" >&2
-    exit 1
-fi
-
 qq_allow_from_json="$(
     printf '%s' "${qq_allow_from_raw}" \
         | tr ',\r' '\n\n' \
@@ -174,7 +168,6 @@ else
         --arg ha_mcp_url "${ha_mcp_url}" \
         --arg ha_mcp_use_supervisor_token "${ha_mcp_use_supervisor_token}" \
         --arg ha_mcp_token "${ha_mcp_token}" \
-        --arg ha_request_timeout "${ha_request_timeout}" \
         --arg qq_app_id "${qq_app_id}" \
         --arg qq_app_secret "${qq_app_secret}" \
         --arg qq_reasoning_channel_id "${qq_reasoning_channel_id}" \
@@ -295,8 +288,7 @@ else
                       env: {
                         HA_MCP_URL: $ha_mcp_url,
                         HA_MCP_USE_SUPERVISOR_TOKEN: $ha_mcp_use_supervisor_token,
-                        HA_MCP_TOKEN: $ha_mcp_token,
-                        HA_MCP_TIMEOUT: $ha_request_timeout
+                        HA_MCP_TOKEN: $ha_mcp_token
                       }
                     }
                   }

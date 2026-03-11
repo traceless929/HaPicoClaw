@@ -11,8 +11,6 @@ RESTART_REQUEST_FILE="/data/picoclaw/restart-gateway"
 
 rm -f "${RESTART_REQUEST_FILE}"
 
-/usr/bin/ha-mcp-selftest || true
-
 while true; do
     /usr/bin/picoclaw gateway &
     gateway_pid=$!

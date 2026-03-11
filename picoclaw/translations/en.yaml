@@ -89,9 +89,6 @@ configuration:
   ha_mcp_token:
     name: Home Assistant - MCP token
     description: Optional long-lived access token. Required when Supervisor token usage is disabled.
-  ha_request_timeout:
-    name: Home Assistant - MCP self-test timeout
-    description: Timeout in seconds for the Home Assistant MCP self-test handshake.
   use_raw_config:
     name: Advanced - Use raw JSON config
     description: Bypass generated settings and write the full PicoClaw config JSON directly.

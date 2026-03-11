@@ -40,11 +40,10 @@ INDEX_HTML = """<!doctype html>
 <body>
   <div class="wrap">
     <h1>PicoClaw Control</h1>
-    <p>这里可以直接运行 MCP 自检、检查 Home Assistant / Supervisor API 连通性，并在同一入口打开容器内终端。</p>
+    <p>这里可以检查 Home Assistant / Supervisor API 连通性、管理 `mcp-proxy` 进程，并在同一入口打开容器内终端。</p>
 
     <div class="grid">
       <button onclick="runCheck('api/diagnostics/all', 'all-result')">运行全部检查</button>
-      <button onclick="runCheck('api/diagnostics/mcp', 'mcp-result')">MCP 自检</button>
       <button onclick="runCheck('api/diagnostics/ha-api', 'ha-result')">检查 HA API</button>
       <button onclick="runCheck('api/diagnostics/supervisor-api', 'supervisor-result')">检查 Supervisor API</button>
       <button class="warning" onclick="runCheck('api/actions/restart-gateway', 'restart-result')">重启 Gateway</button>
@@ -55,12 +54,6 @@ INDEX_HTML = """<!doctype html>
       <div id="all-status" class="status pending">等待执行</div>
       <h2>全部检查</h2>
       <pre id="all-result">点击“运行全部检查”后，这里会显示汇总结果。</pre>
-    </div>
-
-    <div class="card">
-      <div id="mcp-status" class="status pending">等待执行</div>
-      <h2>MCP 自检</h2>
-      <pre id="mcp-result">尚未执行。</pre>
     </div>
 
     <div class="card">
@@ -212,10 +205,6 @@ async def index(request):
     return web.Response(text=INDEX_HTML, content_type="text/html")
 
 
-async def mcp_check(request):
-    return json_response(await run_command(["/usr/bin/ha-mcp-selftest", "--json"]))
-
-
 async def ha_api_check(request):
     return json_response(await run_command(["/usr/bin/ha-api-selftest", "--json"]))
 
@@ -225,16 +214,14 @@ async def supervisor_api_check(request):
 
 
 async def all_checks(request):
-    mcp = await run_command(["/usr/bin/ha-mcp-selftest", "--json"])
     ha_api = await run_command(["/usr/bin/ha-api-selftest", "--json"])
     supervisor = await run_command(["/usr/bin/supervisor-api-selftest", "--json"])
-    ok = all(item.get("ok") for item in (mcp, ha_api, supervisor))
+    ok = all(item.get("ok") for item in (ha_api, supervisor))
     return json_response(
         {
             "ok": ok,
             "summary": "All diagnostics passed" if ok else "One or more diagnostics failed",
             "details": {
-                "mcp": mcp,
                 "ha_api": ha_api,
                 "supervisor_api": supervisor,
             },
@@ -352,7 +339,6 @@ def create_app():
     app = web.Application(client_max_size=10 * 1024 * 1024)
     app.router.add_get("/", index)
     app.router.add_get("/api/mcp-proxy/status", mcp_proxy_status)
-    app.router.add_post("/api/diagnostics/mcp", mcp_check)
     app.router.add_post("/api/diagnostics/ha-api", ha_api_check)
     app.router.add_post("/api/diagnostics/supervisor-api", supervisor_api_check)
     app.router.add_post("/api/diagnostics/all", all_checks)

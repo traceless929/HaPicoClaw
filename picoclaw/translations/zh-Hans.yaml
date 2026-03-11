@@ -89,9 +89,6 @@ configuration:
   ha_mcp_token:
     name: Home Assistant - MCP Token
     description: 可选的长效访问令牌；关闭 Supervisor Token 时必填。
-  ha_request_timeout:
-    name: Home Assistant - MCP 自检超时
-    description: Home Assistant MCP 自检握手超时时间，单位秒。
   use_raw_config:
     name: 高级 - 启用原始 JSON 配置
     description: 跳过自动生成逻辑，直接写入完整的 PicoClaw config.json。

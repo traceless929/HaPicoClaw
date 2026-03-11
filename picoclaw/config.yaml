@@ -1,6 +1,6 @@
 ---
 name: PicoClaw Gateway
-version: "0.1.0-beta.22"
+version: "0.1.0-beta.23"
 slug: picoclaw_gateway
 description: Lightweight PicoClaw gateway add-on for Home Assistant OS
 url: "https://github.com/traceless929/HaPicoClaw"
@@ -48,7 +48,6 @@ options:
   ha_mcp_url: "http://supervisor/core/api/mcp"
   ha_mcp_use_supervisor_token: true
   ha_mcp_token: ""
-  ha_request_timeout: 15
   use_raw_config: false
   raw_config: ""
 schema:
@@ -82,6 +81,5 @@ schema:
   ha_mcp_url: str?
   ha_mcp_use_supervisor_token: bool
   ha_mcp_token: password?
-  ha_request_timeout: int
   use_raw_config: bool
   raw_config: str?
