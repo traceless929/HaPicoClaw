@@ -1,6 +1,6 @@
 ---
 name: PicoClaw Gateway
-version: "0.1.0-beta.23"
+version: "0.1.1"
 slug: picoclaw_gateway
 description: Lightweight PicoClaw gateway add-on for Home Assistant OS
 url: "https://github.com/traceless929/HaPicoClaw"

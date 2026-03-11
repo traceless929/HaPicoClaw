@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+- 发布首个稳定版 Home Assistant add-on，基于官方 `mcp_server`、`mcp-proxy` 和 PicoClaw 的组合方案
+- 移除旧版 `MCP 自检` 脚本、控制页入口和相关配置项，控制页聚焦为 HA API / Supervisor API 检测与 `mcp-proxy` 管理
+- 补充 Home Assistant 官方 `mcp_server`、`mcp-proxy` 与 PicoClaw 的 MCP 调用原理说明
+- 新增中英双语快速开始文档，并加入配置页、控制页和最终效果截图
+- 增加 `My Home Assistant` 一键安装入口，支持官方 MCP 集成、GitHub 原始仓库和国内镜像仓库
+
 ## 0.1.0-beta.23
 
 - 移除旧版 `MCP 自检` 脚本、控制页入口和相关配置项，控制页聚焦为 HA API / Supervisor API 检测与 `mcp-proxy` 管理

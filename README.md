@@ -12,7 +12,7 @@
 
 ## 最新发布
 
-最新版本：[`v0.1.0-beta.23`](https://github.com/traceless929/HaPicoClaw/releases/tag/v0.1.0-beta.23)
+最新版本：[`v0.1.1`](https://github.com/traceless929/HaPicoClaw/releases/tag/v0.1.1)
 
 这一版已经补齐了首个可用的 Home Assistant 集成闭环：
 
