@@ -240,20 +240,3 @@ cat /data/picoclaw/.picoclaw/config.json
 4. `PicoClaw Control` 里的 `mcp-proxy` 状态
 5. add-on 运行日志
 
-## 配图说明
-
-当前文档已经包含：
-
-1. Home Assistant `设置 -> 设备与服务`
-2. 添加集成并搜索 `Model Context Protocol Server`
-3. 官方文档中的 MCP 安装入口
-4. 官方 MCP 集成安装后的系统选项页
-5. add-on 仓库添加与 `PicoClaw Gateway` 入口
-6. add-on 配置页整体图与 Home Assistant MCP 关键字段局部图
-7. `PicoClaw Control` 与 `mcp-proxy` 状态图
-
-如果后续你还想补更细的图文说明，最值得追加的是：
-
-- 实体暴露页面
-- `HA API` 成功结果的单独截图
-- `Supervisor API` 成功结果的单独截图
