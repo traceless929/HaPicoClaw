@@ -225,6 +225,14 @@ def filter_proxy_headers(headers):
     return {key: value for key, value in headers.items() if key.lower() not in blocked}
 
 
+def build_upstream_headers(headers):
+    upstream_headers = filter_proxy_headers(headers)
+    # Avoid compressed asset responses from ttyd so HA Ingress and the browser
+    # see a normal decoded body with matching headers.
+    upstream_headers["Accept-Encoding"] = "identity"
+    return upstream_headers
+
+
 async def proxy_terminal(request):
     upstream_url = f"{TTYD_BASE_URL}{request.path}"
     if request.query_string:
@@ -236,7 +244,7 @@ async def proxy_terminal(request):
         client_ws = web.WebSocketResponse()
         await client_ws.prepare(request)
         async with ClientSession() as session:
-            async with session.ws_connect(upstream_url, headers=filter_proxy_headers(request.headers)) as upstream_ws:
+            async with session.ws_connect(upstream_url, headers=build_upstream_headers(request.headers)) as upstream_ws:
                 async def client_to_upstream():
                     async for msg in client_ws:
                         if msg.type == WSMsgType.TEXT:
@@ -263,10 +271,10 @@ async def proxy_terminal(request):
         async with session.request(
             request.method,
             upstream_url,
-            headers=filter_proxy_headers(request.headers),
+            headers=build_upstream_headers(request.headers),
             data=body,
             allow_redirects=False,
-            auto_decompress=False,
+            skip_auto_headers={"Accept-Encoding"},
         ) as upstream_response:
             response_body = await upstream_response.read()
             response = web.Response(status=upstream_response.status, body=response_body)

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-beta.19
+
+- 修复控制页代理 `ttyd` Terminal 时仍可能请求到压缩资源、导致 iframe 内终端页面显示乱码的问题
+- 代理上游时显式请求未压缩响应，并避免 HTTP 客户端自动补充 `Accept-Encoding`
+
 ## 0.1.0-beta.18
 
 - 新增 `ha_request_timeout` 配置项，并增强 MCP 自检与 HA 工具调用日志的耗时、阶段和错误信息
