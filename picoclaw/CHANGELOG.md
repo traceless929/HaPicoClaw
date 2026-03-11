@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.22
+
+- 在 `PicoClaw Control` 中新增 `mcp-proxy` 运行状态检测
+- 支持从控制页手动启动、停止和重启 `mcp-proxy`，便于排障和进程管理
+- 新增 `ha-mcp-proxy-manager` 管理脚本，用于汇总活动进程状态并执行显式启停
+
 ## 0.1.0-beta.21
 
 - 将 `mcp-proxy` 改为随仓库携带的 wheel 包安装，减少构建时对外部 Python 包源的依赖

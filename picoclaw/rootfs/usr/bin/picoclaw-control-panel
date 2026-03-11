@@ -82,6 +82,18 @@ INDEX_HTML = """<!doctype html>
     </div>
 
     <div class="card">
+      <div id="proxy-status" class="status pending">检测中</div>
+      <h2>mcp-proxy 状态</h2>
+      <div class="actions">
+        <button onclick="refreshProxyStatus()">刷新状态</button>
+        <button onclick="runProxyAction('start')">启动</button>
+        <button class="warning" onclick="runProxyAction('restart')">重启</button>
+        <button class="secondary" onclick="runProxyAction('stop')">停止</button>
+      </div>
+      <pre id="proxy-result">正在检测...</pre>
+    </div>
+
+    <div class="card">
       <h2>内置 Terminal</h2>
       <iframe id="terminal-frame" src="terminal/"></iframe>
     </div>
@@ -98,19 +110,22 @@ INDEX_HTML = """<!doctype html>
       el.className = 'status ' + (ok === null ? 'pending' : ok ? 'ok' : 'fail');
     }
 
+    async function requestJson(url, method = 'POST') {
+      const response = await fetch(addonUrl(url), { method });
+      const rawText = await response.text();
+      try {
+        return JSON.parse(rawText);
+      } catch (parseError) {
+        throw new Error('非 JSON 响应: ' + rawText.slice(0, 500));
+      }
+    }
+
     async function runCheck(url, targetId) {
       const prefix = targetId.replace('-result', '');
       setStatus(prefix, null, '执行中');
       document.getElementById(targetId).textContent = '执行中...';
       try {
-        const response = await fetch(addonUrl(url), { method: 'POST' });
-        const rawText = await response.text();
-        let data;
-        try {
-          data = JSON.parse(rawText);
-        } catch (parseError) {
-          throw new Error('非 JSON 响应: ' + rawText.slice(0, 500));
-        }
+        const data = await requestJson(url, 'POST');
         const ok = !!data.ok;
         setStatus(prefix, ok, ok ? '通过' : '失败');
         document.getElementById(targetId).textContent = JSON.stringify(data, null, 2);
@@ -120,9 +135,41 @@ INDEX_HTML = """<!doctype html>
       }
     }
 
+    function applyProxyStatus(data) {
+      const details = data.details || {};
+      const ok = !!data.ok;
+      const running = !!details.running;
+      const text = ok ? (running ? '运行中' : '未运行') : '未启用';
+      setStatus('proxy', ok ? (running ? true : null) : false, text);
+      document.getElementById('proxy-result').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function refreshProxyStatus() {
+      setStatus('proxy', null, '检测中');
+      document.getElementById('proxy-result').textContent = '检测中...';
+      try {
+        applyProxyStatus(await requestJson('api/mcp-proxy/status', 'GET'));
+      } catch (error) {
+        setStatus('proxy', false, '请求失败');
+        document.getElementById('proxy-result').textContent = error.toString();
+      }
+    }
+
+    async function runProxyAction(action) {
+      setStatus('proxy', null, '执行中');
+      document.getElementById('proxy-result').textContent = '执行中...';
+      try {
+        applyProxyStatus(await requestJson('api/mcp-proxy/' + action, 'POST'));
+      } catch (error) {
+        setStatus('proxy', false, '请求失败');
+        document.getElementById('proxy-result').textContent = error.toString();
+      }
+    }
+
     const terminalUrl = addonUrl('terminal/');
     document.getElementById('terminal-link').href = terminalUrl;
     document.getElementById('terminal-frame').src = terminalUrl;
+    refreshProxyStatus();
   </script>
 </body>
 </html>
@@ -207,6 +254,22 @@ async def restart_gateway(request):
     )
 
 
+async def mcp_proxy_status(request):
+    return json_response(await run_command(["/usr/bin/ha-mcp-proxy-manager", "status", "--json"]))
+
+
+async def start_mcp_proxy(request):
+    return json_response(await run_command(["/usr/bin/ha-mcp-proxy-manager", "start", "--json"]))
+
+
+async def stop_mcp_proxy(request):
+    return json_response(await run_command(["/usr/bin/ha-mcp-proxy-manager", "stop", "--json"]))
+
+
+async def restart_mcp_proxy(request):
+    return json_response(await run_command(["/usr/bin/ha-mcp-proxy-manager", "restart", "--json"]))
+
+
 def filter_proxy_headers(headers):
     blocked = {
         "host",
@@ -288,11 +351,15 @@ async def proxy_terminal(request):
 def create_app():
     app = web.Application(client_max_size=10 * 1024 * 1024)
     app.router.add_get("/", index)
+    app.router.add_get("/api/mcp-proxy/status", mcp_proxy_status)
     app.router.add_post("/api/diagnostics/mcp", mcp_check)
     app.router.add_post("/api/diagnostics/ha-api", ha_api_check)
     app.router.add_post("/api/diagnostics/supervisor-api", supervisor_api_check)
     app.router.add_post("/api/diagnostics/all", all_checks)
     app.router.add_post("/api/actions/restart-gateway", restart_gateway)
+    app.router.add_post("/api/mcp-proxy/start", start_mcp_proxy)
+    app.router.add_post("/api/mcp-proxy/stop", stop_mcp_proxy)
+    app.router.add_post("/api/mcp-proxy/restart", restart_mcp_proxy)
     app.router.add_route("*", "/terminal{tail:.*}", proxy_terminal)
     return app
 

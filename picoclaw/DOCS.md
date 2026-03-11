@@ -319,6 +319,7 @@ add-on 会把 PicoClaw 的配置和工作目录保存在：
 - `MCP 自检`
 - `Home Assistant API 检测`
 - `Supervisor API 检测`
+- `mcp-proxy` 状态检测与手动启动 / 停止 / 重启
 - `重启 Gateway`
 - 内置 Terminal iframe
 - 在新标签页打开 Terminal 的快捷入口

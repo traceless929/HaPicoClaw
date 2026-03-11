@@ -17,6 +17,7 @@
 - 使用宿主机网络直接监听本机 `18790`
 - 支持通过触发文件请求 `gateway` 热重启
 - 提供基于 Home Assistant Ingress 的控制页与内置 Terminal
+- 控制页支持检测 `mcp-proxy` 启动状态，并手动启动、停止和重启
 - 提供基础 Web Search 配置映射
 - 支持通过 `mcp-proxy` 桥接 Home Assistant 官方 `mcp_server`
 - 在 workspace 中自动生成 `AGENTS.md`、`TOOLS.md`、`USER.md` 与默认 Home Assistant skill
@@ -41,6 +42,7 @@
 - `rootfs/etc/services.d/webui/run`：Ingress 控制页服务入口
 - `rootfs/etc/services.d/terminal/run`：内置终端服务入口
 - `rootfs/usr/bin/ha-mcp-proxy-launcher`：官方 Home Assistant MCP 的本地桥接启动脚本
+- `rootfs/usr/bin/ha-mcp-proxy-manager`：`mcp-proxy` 状态检测与手动启停脚本
 - `rootfs/usr/bin/ha-mcp-selftest`：MCP 自检脚本
 - `rootfs/usr/bin/ha-api-selftest`：Home Assistant API 连通性检测
 - `rootfs/usr/bin/supervisor-api-selftest`：Supervisor API 连通性检测

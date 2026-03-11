@@ -1,0 +1,322 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+import signal
+import stat
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+CONFIG_PATH = Path(os.environ.get("PICOCLAW_CONFIG", "/data/picoclaw/.picoclaw/config.json"))
+MANAGED_DIR = Path("/data/picoclaw/mcp-proxy-managed")
+PID_FILE = MANAGED_DIR / "managed.pid"
+STDIN_FIFO = MANAGED_DIR / "managed.stdin"
+LOG_FILE = MANAGED_DIR / "managed.log"
+PROCESS_MARKERS = ("ha-mcp-proxy-launcher", "mcp-proxy --transport=streamablehttp")
+
+
+def emit(payload, json_mode, exit_code=None):
+    if json_mode:
+        print(json.dumps(payload, ensure_ascii=False))
+    else:
+        print(payload.get("summary", ""), file=sys.stderr, flush=True)
+        if payload.get("details"):
+            print(
+                json.dumps(payload["details"], ensure_ascii=False, indent=2),
+                file=sys.stderr,
+                flush=True,
+            )
+    if exit_code is not None:
+        return exit_code
+    return 0 if payload.get("ok") else 1
+
+
+def load_config():
+    if not CONFIG_PATH.exists():
+        return {}
+    with open(CONFIG_PATH, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def parse_env_file(path):
+    env = {}
+    if not path:
+        return env
+
+    env_path = Path(path)
+    if not env_path.exists():
+        raise FileNotFoundError(f"env_file not found: {path}")
+
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        env[key.strip()] = value.strip()
+    return env
+
+
+def build_server_env(server_config):
+    env = os.environ.copy()
+    env.update(parse_env_file(server_config.get("env_file", "")))
+    env.update(server_config.get("env", {}))
+    return env
+
+
+def pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def read_managed_pid():
+    if not PID_FILE.exists():
+        return None
+    try:
+        return int(PID_FILE.read_text(encoding="utf-8").strip())
+    except ValueError:
+        PID_FILE.unlink(missing_ok=True)
+        return None
+
+
+def cleanup_stale_pid_file():
+    pid = read_managed_pid()
+    if pid is not None and not pid_alive(pid):
+        PID_FILE.unlink(missing_ok=True)
+
+
+def list_proxy_processes(managed_pid=None):
+    try:
+        result = subprocess.run(
+            ["ps", "-eo", "pid=,args="],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        return []
+
+    processes = []
+    current_pid = os.getpid()
+    for raw_line in result.stdout.splitlines():
+        line = raw_line.strip()
+        if not line or " " not in line:
+            continue
+        pid_text, args = line.split(None, 1)
+        try:
+            pid = int(pid_text)
+        except ValueError:
+            continue
+        if pid == current_pid:
+            continue
+        if not any(marker in args for marker in PROCESS_MARKERS):
+            continue
+        processes.append(
+            {
+                "pid": pid,
+                "args": args,
+                "managed": managed_pid is not None and pid == managed_pid,
+            }
+        )
+    return sorted(processes, key=lambda item: item["pid"])
+
+
+def ensure_fifo():
+    MANAGED_DIR.mkdir(parents=True, exist_ok=True)
+    if STDIN_FIFO.exists():
+        mode = STDIN_FIFO.stat().st_mode
+        if not stat.S_ISFIFO(mode):
+            STDIN_FIFO.unlink()
+    if not STDIN_FIFO.exists():
+        os.mkfifo(STDIN_FIFO, 0o600)
+
+
+def get_server_config(config):
+    return (
+        config.get("tools", {})
+        .get("mcp", {})
+        .get("servers", {})
+        .get("homeassistant", {})
+    )
+
+
+def describe_status():
+    cleanup_stale_pid_file()
+    config = load_config()
+    mcp_config = config.get("tools", {}).get("mcp", {})
+    server_config = get_server_config(config)
+    managed_pid = read_managed_pid()
+    processes = list_proxy_processes(managed_pid=managed_pid)
+    managed_running = managed_pid is not None and any(item["pid"] == managed_pid for item in processes)
+
+    enabled = mcp_config.get("enabled", False) and server_config.get("enabled", False)
+    if enabled:
+        env = build_server_env(server_config)
+    else:
+        env = {}
+
+    if not enabled:
+        summary = "Home Assistant MCP 未启用"
+        ok = False
+    elif managed_running:
+        summary = "mcp-proxy 已手动启动"
+        ok = True
+    elif processes:
+        summary = "mcp-proxy 运行中（按需启动）"
+        ok = True
+    else:
+        summary = "mcp-proxy 当前未运行（按需启动）"
+        ok = True
+
+    payload = {
+        "ok": ok,
+        "summary": summary,
+        "details": {
+            "configured": enabled,
+            "running": bool(processes),
+            "managed_running": managed_running,
+            "managed_pid": managed_pid if managed_running else None,
+            "active_process_count": len(processes),
+            "active_processes": processes,
+            "ha_mcp_url": env.get("HA_MCP_URL", ""),
+            "ha_mcp_use_supervisor_token": env.get("HA_MCP_USE_SUPERVISOR_TOKEN", ""),
+            "has_custom_token": bool(env.get("HA_MCP_TOKEN", "").strip()),
+            "log_path": str(LOG_FILE),
+            "note": "PicoClaw 正常情况下会按需启动 mcp-proxy；这里的手动控制主要用于排障和进程管理。",
+        },
+    }
+    return payload, server_config
+
+
+def terminate_pids(pids):
+    for pid in pids:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            continue
+
+    deadline = time.time() + 3
+    while time.time() < deadline:
+        remaining = [pid for pid in pids if pid_alive(pid)]
+        if not remaining:
+            return
+        time.sleep(0.2)
+
+    for pid in pids:
+        if not pid_alive(pid):
+            continue
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            continue
+
+
+def start_managed_proxy(server_config):
+    if not server_config.get("enabled", False):
+        return {
+            "ok": False,
+            "summary": "Home Assistant MCP 未启用，无法启动 mcp-proxy",
+            "details": {},
+        }
+
+    cleanup_stale_pid_file()
+    current_pid = read_managed_pid()
+    if current_pid is not None and pid_alive(current_pid):
+        status, _ = describe_status()
+        status["summary"] = "mcp-proxy 已在运行"
+        return status
+
+    ensure_fifo()
+    env = build_server_env(server_config)
+    env["PICOCLAW_MCP_PROXY_MANAGED"] = "1"
+
+    command = server_config.get("command", "").strip()
+    command_args = server_config.get("args", [])
+    if not command:
+        return {
+            "ok": False,
+            "summary": "mcp-proxy command is empty",
+            "details": {"server_config": server_config},
+        }
+
+    MANAGED_DIR.mkdir(parents=True, exist_ok=True)
+    fifo_fd = os.open(STDIN_FIFO, os.O_RDWR | os.O_NONBLOCK)
+    log_handle = open(LOG_FILE, "a", encoding="utf-8")
+    log_handle.write(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] starting managed mcp-proxy\n")
+    log_handle.flush()
+    try:
+        process = subprocess.Popen(
+            [command, *command_args],
+            stdin=fifo_fd,
+            stdout=log_handle,
+            stderr=log_handle,
+            env=env,
+            start_new_session=True,
+        )
+    finally:
+        os.close(fifo_fd)
+        log_handle.close()
+
+    PID_FILE.write_text(str(process.pid), encoding="utf-8")
+    time.sleep(1)
+
+    status, _ = describe_status()
+    if status["details"].get("managed_running"):
+        status["summary"] = "mcp-proxy 启动成功"
+        return status
+
+    status["ok"] = False
+    status["summary"] = "mcp-proxy 启动失败"
+    return status
+
+
+def stop_proxy_processes():
+    status, _ = describe_status()
+    pids = {item["pid"] for item in status["details"].get("active_processes", [])}
+    managed_pid = read_managed_pid()
+    if managed_pid is not None:
+        pids.add(managed_pid)
+
+    if not pids:
+        status["summary"] = "mcp-proxy 当前未运行"
+        return status
+
+    terminate_pids(sorted(pids))
+    PID_FILE.unlink(missing_ok=True)
+    status, _ = describe_status()
+    status["summary"] = "mcp-proxy 已停止"
+    return status
+
+
+def restart_proxy_processes(server_config):
+    stop_proxy_processes()
+    return start_managed_proxy(server_config)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("action", choices=["status", "start", "stop", "restart"])
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+
+    status, server_config = describe_status()
+
+    if args.action == "status":
+        return emit(status, args.json, exit_code=0)
+    if args.action == "start":
+        return emit(start_managed_proxy(server_config), args.json)
+    if args.action == "stop":
+        return emit(stop_proxy_processes(), args.json, exit_code=0)
+    if args.action == "restart":
+        return emit(restart_proxy_processes(server_config), args.json)
+
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
