@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-beta.21
+
+- 将 `mcp-proxy` 改为随仓库携带的 wheel 包安装，减少构建时对外部 Python 包源的依赖
+- 镜像构建时改用独立 Python venv 安装本地 wheel，绕过 Alpine / Home Assistant 基础镜像上的 `PEP 668` 限制
+
 ## 0.1.0-beta.20
 
 - 改为通过 `mcp-proxy` 对接 Home Assistant 官方 `mcp_server`，由 PicoClaw 继续以本地 `stdio` MCP 进程方式消费

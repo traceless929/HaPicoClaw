@@ -12,13 +12,14 @@
 
 ## 最新发布
 
-最新版本：[`v0.1.0-beta.20`](https://github.com/traceless929/HaPicoClaw/releases/tag/v0.1.0-beta.20)
+最新版本：[`v0.1.0-beta.21`](https://github.com/traceless929/HaPicoClaw/releases/tag/v0.1.0-beta.21)
 
 这一版已经补齐了首个可用的 Home Assistant 集成闭环：
 
 - 新增 Home Assistant API 相关 add-on 配置项
 - 自动为 PicoClaw 生成原生 `tools.mcp` 与 `tools.skills`
 - 通过 `mcp-proxy` 对接 Home Assistant 官方 `mcp_server`，并由 PicoClaw 以本地 MCP 进程方式消费
+- 随仓库携带 `mcp-proxy` wheel，减少构建时对外部 Python 包源的依赖
 - 首次启动时自动生成默认 `AGENTS.md`、`TOOLS.md`、`USER.md` 和 `skills/home-assistant/SKILL.md`
 - 补充了 Home Assistant 配置、实体查找和排错文档
 - 新增 MCP 自检与升级兼容逻辑，并开始提供 Ingress 控制页方向

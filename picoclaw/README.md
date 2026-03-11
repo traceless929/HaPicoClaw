@@ -9,6 +9,7 @@
 ## 当前能力
 
 - 随仓库携带并解压 `PicoClaw` 官方 `aarch64` 二进制 tar 包
+- 随仓库携带 `mcp-proxy` wheel，避免构建时再从外部 Python 包源下载
 - 通过 add-on 选项生成 `config.json`
 - 支持直接粘贴完整 `PicoClaw config.json`
 - 使用 `/data/picoclaw` 持久化配置与工作目录
