@@ -239,21 +239,3 @@ Recommended troubleshooting order:
 3. Is the add-on configuration correct
 4. What does `mcp-proxy status` show in `PicoClaw Control`
 5. What do the add-on logs say
-
-## Screenshot coverage
-
-This guide now includes:
-
-1. Home Assistant `Settings -> Devices & Services`
-2. Adding the integration and searching for `Model Context Protocol Server`
-3. The official documentation install entry
-4. The official MCP integration options page
-5. Add-on repository setup and the `PicoClaw Gateway` entry
-6. The full add-on configuration page plus the Home Assistant MCP related fields
-7. `PicoClaw Control` with `mcp-proxy` status
-
-If you want to make it even more detailed later, the most useful extra screenshots would be:
-
-- The entity exposure page
-- A dedicated successful `HA API` result screenshot
-- A dedicated successful `Supervisor API` result screenshot
