@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1-beta.1
+
+- 升级随仓库携带的 `picoclaw` 二进制到 `0.2.2`
+
 ## 0.1.1
 
 - 发布首个稳定版 Home Assistant add-on，基于官方 `mcp_server`、`mcp-proxy` 和 PicoClaw 的组合方案
