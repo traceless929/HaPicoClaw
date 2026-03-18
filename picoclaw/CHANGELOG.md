@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1-beta.2
+
+- 升级随仓库携带的 `picoclaw` 二进制到 `0.2.3`
+- `ha-mcp-server` 的 `SERVER_VERSION` 与 add-on 对齐为 `0.1.1-beta.2`
+
 ## 0.1.1-beta.1
 
 - 升级随仓库携带的 `picoclaw` 二进制到 `0.2.2`

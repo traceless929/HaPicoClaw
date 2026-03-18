@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 
 SERVER_NAME = "ha-mcp-server"
-SERVER_VERSION = "0.1.0-beta.13"
+SERVER_VERSION = "0.1.1-beta.2"
 PROTOCOL_VERSION = "2024-11-05"
 
 
